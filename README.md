@@ -3,5 +3,9 @@
     - installable via `pip install weartsdk-sky`
 - CoppeliaSim ZMQ API
     - see [the manual](https://manual.coppeliarobotics.com/en/zmqRemoteApiOverview.htm)
+- [pyopenxr](https://github.com/cmbruns/pyopenxr/)
+    - `pip install pyopenxr`
 - [Python keyboard library](https://pypi.org/project/keyboard/)
     - `pip install keyboard`
+- [matplotlib](https://pypi.org/project/matplotlib/) (for real-time performance plots)
+    - `pip install matplotlib`

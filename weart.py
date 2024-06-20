@@ -63,7 +63,5 @@ class WeartConnector(object):
         return self._thumbThimbleTracking.GetClosure()
     
     def apply_force(self, force_value):
-        print("Applying", force_value)
-
         self._touchEffect.Set(self._touchEffect.getTemperature(), WeArtForce(True, force_value), self._touchEffect.getTexture())
         self._hapticObject.UpdateEffects()
