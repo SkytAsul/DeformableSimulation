@@ -4,8 +4,9 @@ from matplotlib import pyplot
 from matplotlib.animation import FuncAnimation
 import matplotlib.dates as mdates
 
-class Benchmarker:
-    def __init__(self):
+class Plotter:
+    def __init__(self, title = "Real-time plot"):
+        self._title = title
         self.start()
 
     def start(self):
@@ -14,25 +15,22 @@ class Benchmarker:
         self._iter_time = []
         self._labels = []
         self._iter_i = 0
+        self._animation = None
     
     def new_iteration(self):
-        self._time = time.perf_counter()
         self._iter_data = [] if self._iter_i == 0 else [0] * len(self._labels)
         self._iter_time.append(datetime.datetime.now())
         self._iter_j = 0
 
-    def mark(self, label):
-        duration = time.perf_counter() - self._time
+    def plot(self, value, label):
         if self._iter_i == 0:
-            self._iter_data.append(duration)
-            self._plot_data.append([duration])
+            self._iter_data.append(value)
+            self._plot_data.append([value])
             self._labels.append(label)
         else:
-            self._iter_data[self._iter_j] = duration
-            self._plot_data[self._iter_j].append(duration)
+            self._iter_data[self._iter_j] = value
+            self._plot_data[self._iter_j].append(value)
         self._iter_j += 1
-        
-        self._time = time.perf_counter()
 
     def end_iteration(self):
         if self._iter_j != 0:
@@ -41,14 +39,14 @@ class Benchmarker:
     
     def stop(self):
         self.end_iteration()
-        self._animation.pause()
+        if self._animation != None:
+            self._animation.pause()
 
     def export_csv(self, path, include_iter = False, include_time = False):
         with open(path, 'w', newline='') as f:
             writer = csv.writer(f)
 
             headers = []
-            data = self._csv_data.copy()
             if include_iter:
                 headers.append("Iteration")
             if include_time:
@@ -70,13 +68,13 @@ class Benchmarker:
         DO NOT CALL OUTSIDE THE MAIN THREAD
         '''
         figure, ax = pyplot.subplots()
-        figure.canvas.manager.set_window_title('Real-time benchmarking')
+        figure.canvas.manager.set_window_title(self._title)
         ax.set_xlabel('Time' if use_time else 'Iteration')
         ax.set_ylabel('Time taken (s)')
 
         lines = []
 
-        def update(frame):
+        def update(_):
             changed_lines = False
 
             if use_time:
@@ -84,25 +82,41 @@ class Benchmarker:
             else:
                 x_data = range(self._iter_i)
 
-            for i in range(0, len(self._plot_data)): # from 1 because there are the x values
+            for i in range(0, len(self._plot_data)):
                 if i >= len(lines):
                     line, = pyplot.plot([datetime.datetime.now() if use_time else 0], [1], label = self._labels[i])
                     lines.append(line)
                     changed_lines = True
                 
-                lines[i-1].set_data(x_data, self._plot_data[i][0:self._iter_i])
+                lines[i].set_data(x_data, self._plot_data[i][0:self._iter_i])
                 
             x_shown = x_data[-max_points:]
-            if x_shown != []:
+            if len(x_shown) > 1:
                 ax.set_xlim(left = x_shown[0], right = x_shown[-1])
             ax.relim()
             ax.autoscale_view()
             if changed_lines:
                 figure.legend()
+                pyplot.draw() # no way to blit the legend
+            
+            return lines
 
-        self._animation = FuncAnimation(figure, update, interval=300, cache_frame_data=False)
+        self._animation = FuncAnimation(figure, update, interval=300, cache_frame_data=False, blit=True)
         pyplot.show()
+        self._animation = None
 
+class Benchmarker(Plotter):
+    def __init__(self, title = "Real-time benchmarking"):
+        super().__init__(title)
+
+    def new_iteration(self):
+        super().new_iteration()
+        self._time = time.perf_counter()
+
+    def mark(self, label):
+        duration = time.perf_counter() - self._time
+        super().plot(duration, label)
+        self._time = time.perf_counter()
 
 # demo
 from threading import Thread

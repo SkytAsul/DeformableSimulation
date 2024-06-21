@@ -1,7 +1,7 @@
 from coppelia import *
 from weart import *
 import math, keyboard
-from benchmarking import Benchmarker
+from benchmarking import Benchmarker, Plotter
 from threading import Thread
 
 def closure_to_angle(closure):
@@ -20,35 +20,41 @@ def simulation(copp: CoppeliaConnector, weart: WeartConnector, openxr):
     copp.start_simulation()
     weart.start_listeners()
 
-    bench = Benchmarker()
+    perf_bench = Benchmarker(title="Performance profiler")
+    force_plot = Plotter(title="Applied force graph")
 
     def loop():
         try:
             while not keyboard.is_pressed("esc"):
-                bench.new_iteration()
+                perf_bench.new_iteration()
+                force_plot.new_iteration()
                 angle = closure_to_angle(weart.get_index_closure())
-                bench.mark("Closure angle computation")
+                perf_bench.mark("Closure angle computation")
                 copp.move_finger(angle)
-                bench.mark("Apply finger rotation")
+                perf_bench.mark("Apply finger rotation")
                 copp.step_simulation()
-                bench.mark("Do simulation step")
+                perf_bench.mark("Do simulation step")
                 force = force_copp_to_weart(copp.get_contact_force())
-                bench.mark("Get contact force")
+                perf_bench.mark("Get contact force")
                 weart.apply_force(force)
-                bench.mark("Apply force to finger")
-                bench.end_iteration()
+                perf_bench.mark("Apply force to finger")
+                force_plot.plot(force, "Force applied")
+                force_plot.end_iteration()
+                perf_bench.end_iteration()
         except KeyboardInterrupt:
             pass
         finally:
-            bench.stop()
-            bench.export_csv("benchmark.csv", include_time=True)
+            force_plot.stop()
+            perf_bench.stop()
+            #perf_bench.export_csv("benchmark.csv", include_time=True)
             print("Stopping simulation...")
             copp.stop_simulation()
 
     t = Thread(target=loop)
     t.start()
     # we must run the loop in another thread because the graph can only be visualized in the main thread...
-    bench.graph_viz(max_points=50, use_time=True)
+    #perf_bench.graph_viz(max_points=80, use_time=True)
+    force_plot.graph_viz(max_points=80)
 
 if __name__ == "__main__":
     print("Starting script...\n")
