@@ -1,11 +1,16 @@
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
+from enum import Enum
 import math
 
 class SceneException(Exception):
     pass
 
+class ForceCalculation(Enum):
+    SUM = 1,
+    DOT_NORMAL = 2
+
 class CoppeliaConnector:
-    def __init__(self):
+    def __init__(self, force_calculation = ForceCalculation.DOT_NORMAL):
         self._client = RemoteAPIClient()
         self._sim = self._client.require('sim')
 
@@ -13,6 +18,8 @@ class CoppeliaConnector:
         #self._mujoco = self._client.require('simMujoco')
 
         self._fetch_finger()
+
+        self._force_calculation = force_calculation
 
     def _check_correct_engine(self):
         engine = self._sim.getInt32Param(self._sim.intparam_dynamic_engine)
@@ -33,11 +40,20 @@ class CoppeliaConnector:
         max_iterations = 1 # seems like we get a big value first and then small ones
         total_force = 0
         for i in range(0, max_iterations):
-            _, _, rForce, _ = self._sim.getContactInfo(self._sim.handle_all, self._finger_handle, i)
+            _, _, rForce, n = self._sim.getContactInfo(self._sim.handle_all, self._finger_handle, i)
             if rForce == []:
-                break
-            for j in range(0, 3):
-                total_force += rForce[j]
+                break # no more contacts
+
+            match self._force_calculation:
+                case ForceCalculation.SUM:
+                    # easy way: sum all components
+                    for j in range(0, 3):
+                        total_force += rForce[j]
+                case ForceCalculation.DOT_NORMAL:
+                    # dot product of the force with the normal
+                    for j in range(0, 3):
+                        total_force += rForce[j] * n[j]
+                    
         return total_force
     
     def start_simulation(self):
