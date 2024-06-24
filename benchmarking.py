@@ -2,7 +2,6 @@ import time, datetime
 import csv
 from matplotlib import pyplot
 from matplotlib.animation import FuncAnimation
-import matplotlib.dates as mdates
 
 class Plotter:
     def __init__(self, title = "Real-time plot"):
@@ -63,14 +62,19 @@ class Plotter:
                 row += self._csv_data[i]
                 writer.writerow(row)
 
-    def graph_viz(self, max_points = -1, use_time = False):
-        '''
-        DO NOT CALL OUTSIDE THE MAIN THREAD
-        '''
+    def graph_viz(self, max_points = -1, use_time = False, y_axis = "Value"):
+        """
+        Displays a real-time line chart.
+
+        This method will only returns when the user hits closes the visualization window,
+        even if the 'stop' method is called beforehand.
+        
+        WARNING: This method must be called in the main thread.
+        """
         figure, ax = pyplot.subplots()
         figure.canvas.manager.set_window_title(self._title)
         ax.set_xlabel('Time' if use_time else 'Iteration')
-        ax.set_ylabel('Time taken (s)')
+        ax.set_ylabel(y_axis)
 
         lines = []
 
@@ -97,11 +101,11 @@ class Plotter:
             ax.autoscale_view()
             if changed_lines:
                 figure.legend()
-                pyplot.draw() # no way to blit the legend
             
             return lines
 
-        self._animation = FuncAnimation(figure, update, interval=300, cache_frame_data=False, blit=True)
+        self._animation = FuncAnimation(figure, update, interval=300, cache_frame_data=False, blit=False)
+        # no blit because axes change, legend...
         pyplot.show()
         self._animation = None
 
@@ -117,22 +121,27 @@ class Benchmarker(Plotter):
         duration = time.perf_counter() - self._time
         super().plot(duration, label)
         self._time = time.perf_counter()
+    
+    def graph_viz(self, max_points = -1, use_time = False, y_axis = "Time taken (s)"):
+        return super().graph_viz(max_points, use_time, y_axis)
 
 # demo
-from threading import Thread
-import random
 if __name__ == "__main__":
+    from threading import Thread
+    import random
     b = Benchmarker()
 
     def d():
         for i in range(6):
             b.new_iteration()
             time.sleep(random.uniform(0.4, 0.6))
-            b.mark("slept")
+            b.mark("slept1")
             time.sleep(random.uniform(0.1, 0.3))
             b.mark("slept2")
             time.sleep(random.uniform(0.6, 0.8))
             b.mark("slept3")
+            time.sleep(3 if i == 2 else 0.5)
+            b.mark("slept4")
             b.end_iteration()
             print("Finished iter")
         b.stop()
