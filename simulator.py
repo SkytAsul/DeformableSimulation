@@ -9,12 +9,6 @@ def closure_to_angle(closure):
     degree = closure * 100 if closure < 0.4 else 40
     return math.radians(degree)
 
-def force_copp_to_weart(copp_force):
-    # absolute value, scaled from 0 to 3 -> 0 to 1
-    force = abs(copp_force)
-    force /= 3
-    return force
-
 def simulation(copp: CoppeliaConnector, weart: WeartConnector, openxr):
     print("Starting simulation.")
     copp.start_simulation()
@@ -34,7 +28,7 @@ def simulation(copp: CoppeliaConnector, weart: WeartConnector, openxr):
                 perf_bench.mark("Apply finger rotation")
                 copp.step_simulation()
                 perf_bench.mark("Do simulation step")
-                force = force_copp_to_weart(copp.get_contact_force())
+                force = copp.get_contact_force()
                 perf_bench.mark("Get contact force")
                 weart.apply_force(force)
                 perf_bench.mark("Apply force to finger")
@@ -54,7 +48,8 @@ def simulation(copp: CoppeliaConnector, weart: WeartConnector, openxr):
     t.start()
     # we must run the loop in another thread because the graph can only be visualized in the main thread...
     #perf_bench.graph_viz(max_points=80, use_time=True)
-    force_plot.graph_viz(max_points=80)
+    force_plot.graph_viz(max_points=80, y_axis="Force")
+    t.join()
 
 if __name__ == "__main__":
     print("Starting script...\n")
