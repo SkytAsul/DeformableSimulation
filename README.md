@@ -4,15 +4,20 @@ The goal of this project is to link a haptic device (the WEART TouchDIVER), a VR
 This project is conducted at the DIAG Robotics Laboratory of Sapienza University of Rome, under the supervision of Marilena Vendittelli.
 
 # Dependencies
-- [WEART Python SDK](https://github.com/WEARTHaptics/WEART-SDK-Python) for the TouchDIVER
+- [WEART Python SDK](https://github.com/WEARTHaptics/WEART-SDK-Python)
+    - for the TouchDIVER
     - installable via `pip install weartsdk-sky`
-- CoppeliaSim ZMQ API for the simulation
+- [CoppeliaSim](https://coppeliarobotics.com/) ZMQ API
+    - for the simulation
     - see [the manual](https://manual.coppeliarobotics.com/en/zmqRemoteApiOverview.htm)
-- [pyopenxr](https://github.com/cmbruns/pyopenxr/) for the VR headset and the controllers
+- [pyopenxr](https://github.com/cmbruns/pyopenxr/)
+    - for the VR headset and the controllers
     - `pip install pyopenxr`
-- [Python keyboard library](https://pypi.org/project/keyboard/)
-    - `pip install keyboard`
-- [matplotlib](https://pypi.org/project/matplotlib/) for real-time performance plots
+- [pynput](https://pypi.org/project/pynput/)
+    - to listen to keyboard press
+    - `pip install pynput`
+- [matplotlib](https://pypi.org/project/matplotlib/)
+    - for real-time performance plots
     - `pip install matplotlib`
 
 # How to use

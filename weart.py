@@ -1,24 +1,11 @@
-from weartsdk.WeArtHapticObject import WeArtHapticObject
-from weartsdk.WeArtCommon import HandSide, ActuationPoint, CalibrationStatus
-from weartsdk.WeArtTemperature import WeArtTemperature
-from weartsdk.WeArtTexture import WeArtTexture
-from weartsdk.WeArtForce import WeArtForce
-from weartsdk.WeArtCommon import TextureType
-from weartsdk.WeArtEffect import TouchEffect
-from weartsdk.WeArtTrackingCalibration import WeArtTrackingCalibration
-from weartsdk.WeArtThimbleTrackingObject import WeArtThimbleTrackingObject
-from weartsdk.WeArtTrackingRawData import WeArtTrackingRawData
-from weartsdk.MiddlewareStatusListener import MiddlewareStatusListener
-from weartsdk.WeArtAnalogSensorData import WeArtAnalogSensorData
-
-from weartsdk.WeArtClient import WeArtClient
-import weartsdk.WeArtCommon
+from weartsdk import *
+from weartsdk.WeArtCommon import HandSide, ActuationPoint
 import time
 import logging
 
 class WeartConnector(object):
-    def __init__(self):
-        self._client = WeArtClient(weartsdk.WeArtCommon.DEFAULT_IP_ADDRESS, weartsdk.WeArtCommon.DEFAULT_TCP_PORT, log_level=logging.INFO)
+    def __init__(self, ip_address = WeArtCommon.DEFAULT_IP_ADDRESS, port = WeArtCommon.DEFAULT_TCP_PORT):
+        self._client = WeArtClient(ip_address, port, log_level=logging.INFO)
 
         self._hapticObject = WeArtHapticObject(self._client)
         self._hapticObject.handSideFlag = HandSide.Right.value
