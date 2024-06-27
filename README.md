@@ -20,6 +20,11 @@ This project is conducted at the DIAG Robotics Laboratory of Sapienza University
     - for real-time performance plots
     - `pip install matplotlib`
 
+You can install all these dependencies at once by executing this command while being in the repository directory:
+```sh
+$ pip install -r requirements.txt
+```
+
 # How to use
 1. Open the [scene](<assets/CoppeliaSim scene.ttt>) in CoppeliaSim.
 1. Open the WEART Middleware and connect your TouchDIVER.
