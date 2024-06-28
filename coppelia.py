@@ -1,11 +1,12 @@
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 from enum import Enum
+from engine import Engine
 import math
 
 class SceneException(Exception):
     pass
 
-class CoppeliaConnector:
+class CoppeliaConnector(Engine):
     def __init__(self):
         self._client = RemoteAPIClient()
         self.sim = self._client.require('sim')

@@ -1,5 +1,7 @@
-from coppelia import *
-from weart import *
+from engine import Engine
+from coppelia import CoppeliaConnector
+from mujoco_connector import MujocoConnector
+from weart import WeartConnector
 from benchmarking import Benchmarker, Plotter
 from threading import Thread
 from pynput import keyboard
@@ -10,9 +12,9 @@ def closure_to_angle(closure):
     degree = closure * 100 if closure < 0.4 else 40
     return math.radians(degree)
 
-def simulation(copp: CoppeliaConnector, weart: WeartConnector, openxr):
+def simulation(engine: Engine, weart: WeartConnector, openxr):
     print("Starting simulation.")
-    copp.start_simulation()
+    engine.start_simulation()
     weart.start_listeners()
 
     perf_bench = Benchmarker(title="Performance profiler")
@@ -34,11 +36,11 @@ def simulation(copp: CoppeliaConnector, weart: WeartConnector, openxr):
                 force_plot.new_iteration()
                 angle = closure_to_angle(weart.get_index_closure())
                 perf_bench.mark("Closure angle computation")
-                copp.move_finger(angle)
+                engine.move_finger(angle)
                 perf_bench.mark("Apply finger rotation")
-                copp.step_simulation()
+                engine.step_simulation()
                 perf_bench.mark("Do simulation step")
-                force = copp.get_contact_force()
+                force = engine.get_contact_force()
                 perf_bench.mark("Get contact force")
                 weart.apply_force(force)
                 perf_bench.mark("Apply force to finger")
@@ -52,7 +54,7 @@ def simulation(copp: CoppeliaConnector, weart: WeartConnector, openxr):
             perf_bench.stop()
             #perf_bench.export_csv("benchmark.csv", include_time=True)
             print("Stopping simulation...")
-            copp.stop_simulation()
+            engine.stop_simulation()
             listener.stop()
 
     t = Thread(target=loop)
@@ -65,9 +67,15 @@ def simulation(copp: CoppeliaConnector, weart: WeartConnector, openxr):
 if __name__ == "__main__":
     print("Starting script...\n")
 
-    print("Connecting to Coppelia...")
-    copp = CoppeliaConnector()
-    print("Connected.\n")
+    # print("Connecting to Coppelia...")
+    # copp = CoppeliaConnector()
+    # print("Connected.\n")
+
+    print("Loading MuJoCo...")
+    mujoco = MujocoConnector("assets/MuJoCo scene.xml")
+    print("Loaded.")
+
+    engine = mujoco
 
     print("Connecting to WEART...")
     with WeartConnector(ip_address="vps", port=10000) as weart:
@@ -77,4 +85,4 @@ if __name__ == "__main__":
         print("Calibrated.\n")
 
         # openxr code
-        simulation(copp, weart, None)
+        simulation(engine, weart, None)

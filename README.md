@@ -6,10 +6,15 @@ This project is conducted at the DIAG Robotics Laboratory of Sapienza University
 # Dependencies
 - [WEART Python SDK](https://github.com/WEARTHaptics/WEART-SDK-Python)
     - for the TouchDIVER
-    - installable via `pip install weartsdk-sky`
+    - `pip install weartsdk-sky`
 - [CoppeliaSim](https://coppeliarobotics.com/) ZMQ API
     - for the simulation
+    - `pip install coppeliasim_zmqremoteapi_client`
     - see [the manual](https://manual.coppeliarobotics.com/en/zmqRemoteApiOverview.htm)
+- [Mujoco](https://mujoco.readthedocs.io/en/stable/overview.html)
+    - for the simulation
+    - `pip install mujoco`
+    - see [the manual](https://mujoco.readthedocs.io/en/stable/python.html)
 - [pyopenxr](https://github.com/cmbruns/pyopenxr/)
     - for the VR headset and the controllers
     - `pip install pyopenxr`
