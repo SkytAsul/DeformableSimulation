@@ -78,7 +78,7 @@ if __name__ == "__main__":
     engine = mujoco
 
     print("Connecting to WEART...")
-    with WeartConnector(ip_address="vps", port=10000) as weart:
+    with WeartConnector() as weart:
         print("Connected. Calibrating...")
 
         weart.calibrate()
