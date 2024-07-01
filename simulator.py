@@ -1,8 +1,12 @@
+# local code
 from engine import Engine
 from coppelia import CoppeliaConnector
 from mujoco_connector import MujocoConnector
 from weart import WeartConnector
 from benchmarking import Benchmarker, Plotter
+from openxr import OpenXrConnector
+
+# libraries
 from threading import Thread
 from pynput import keyboard
 import math
@@ -12,7 +16,7 @@ def closure_to_angle(closure):
     degree = closure * 100 if closure < 0.4 else 40
     return math.radians(degree)
 
-def simulation(engine: Engine, weart: WeartConnector, openxr):
+def simulation(engine: Engine, weart: WeartConnector, openxr: OpenXrConnector):
     print("Starting simulation.")
     engine.start_simulation()
     weart.start_listeners()
@@ -29,13 +33,19 @@ def simulation(engine: Engine, weart: WeartConnector, openxr):
     def loop():
         listener = keyboard.Listener(on_press=key_press)
         listener.start()
+        # thread thing for opengl here
 
         try:
-            while not esc_pressed:
+            for frame in openxr.main_loop():
+                if esc_pressed:
+                    break
                 perf_bench.new_iteration()
                 force_plot.new_iteration()
                 angle = closure_to_angle(weart.get_index_closure())
                 perf_bench.mark("Closure angle computation")
+                eyes = openxr.get_eyes_poses()
+                print(eyes)
+                perf_bench.mark("Apply eye positions")
                 engine.move_finger(angle)
                 perf_bench.mark("Apply finger rotation")
                 engine.step_simulation()
@@ -61,7 +71,7 @@ def simulation(engine: Engine, weart: WeartConnector, openxr):
     t.start()
     # we must run the loop in another thread because the graph can only be visualized in the main thread...
     #perf_bench.graph_viz(max_points=80, use_time=True)
-    #force_plot.graph_viz(max_points=10000, y_axis="Force")
+    force_plot.graph_viz(max_points=10000, y_axis="Force")
     t.join()
 
 if __name__ == "__main__":
@@ -72,17 +82,20 @@ if __name__ == "__main__":
     # print("Connected.\n")
 
     print("Loading MuJoCo...")
-    mujoco = MujocoConnector("assets/MuJoCo scene.xml")
+    mujoco = MujocoConnector("assets/MuJoCo scene.xml", viewer=False)
     print("Loaded.")
 
     engine = mujoco
 
-    print("Connecting to WEART...")
-    with WeartConnector() as weart:
-        print("Connected. Calibrating...")
+    print("Loading Virtual Reality...")
+    with OpenXrConnector() as openxr:
+        print("OpenXr context created.")
 
-        weart.calibrate()
-        print("Calibrated.\n")
+        print("Connecting to WEART...")
+        with WeartConnector() as weart:
+            print("Connected. Calibrating...")
 
-        # openxr code
-        simulation(engine, weart, None)
+            weart.calibrate()
+            print("Calibrated.\n")
+
+            simulation(engine, weart, openxr)
