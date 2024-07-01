@@ -61,7 +61,7 @@ def simulation(engine: Engine, weart: WeartConnector, openxr):
     t.start()
     # we must run the loop in another thread because the graph can only be visualized in the main thread...
     #perf_bench.graph_viz(max_points=80, use_time=True)
-    #force_plot.graph_viz(max_points=80, y_axis="Force")
+    #force_plot.graph_viz(max_points=10000, y_axis="Force")
     t.join()
 
 if __name__ == "__main__":

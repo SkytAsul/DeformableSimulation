@@ -32,8 +32,9 @@ class MujocoConnector(Engine):
         self._data.mocap_pos[self._finger_id] += self._finger_axis_point
     
     def get_contact_force(self) -> float:
-        # use sensor
-        return 0
+        data = self._data.sensor("fingertip_sensor").data
+        # data is an array containing only one number: the normal force
+        return data[0] / 30
 
     def start_simulation(self):
         self._viewer = mujoco.viewer.launch_passive(self._model, self._data)
