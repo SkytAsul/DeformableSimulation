@@ -22,15 +22,15 @@ class OpenXrConnector:
     def main_loop(self):
         for frame_index, self._frame_state in enumerate(self._context.frame_loop()):
             yield frame_index
-
-    def get_eyes_poses(self):
+    
+    def get_eyes(self):
         view_state, views = xr.locate_views(self._context.session,
             view_locate_info=xr.ViewLocateInfo(
                 view_configuration_type=self._context.view_configuration_type,
                 display_time=self._frame_state.predicted_display_time,
                 space=self._context.space,
             ))
-        return views
+        return views[0:2]
 
     def draw_pink(self):
         for frame_index, frame_state in enumerate(self._context.frame_loop()):

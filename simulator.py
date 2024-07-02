@@ -1,12 +1,13 @@
 # local code
 from engine import Engine
 from coppelia import CoppeliaConnector
-from mujoco_connector import MujocoConnector
+from mujoco_connector import MujocoConnector, MujocoRenderer
 from weart import WeartConnector
 from benchmarking import Benchmarker, Plotter
 from openxr import OpenXrConnector
 
 # libraries
+from typing import Optional
 from threading import Thread
 from pynput import keyboard
 import math
@@ -16,7 +17,7 @@ def closure_to_angle(closure):
     degree = closure * 100 if closure < 0.4 else 40
     return math.radians(degree)
 
-def simulation(engine: Engine, weart: WeartConnector, openxr: OpenXrConnector):
+def simulation(engine: Engine, weart: WeartConnector, openxr: OpenXrConnector, renderer : Optional[MujocoRenderer]):
     print("Starting simulation.")
     engine.start_simulation()
     weart.start_listeners()
@@ -33,7 +34,9 @@ def simulation(engine: Engine, weart: WeartConnector, openxr: OpenXrConnector):
     def loop():
         listener = keyboard.Listener(on_press=key_press)
         listener.start()
-        # thread thing for opengl here
+        
+        if renderer is not None:
+            renderer.init_context()
 
         try:
             for frame in openxr.main_loop():
@@ -43,13 +46,16 @@ def simulation(engine: Engine, weart: WeartConnector, openxr: OpenXrConnector):
                 force_plot.new_iteration()
                 angle = closure_to_angle(weart.get_index_closure())
                 perf_bench.mark("Closure angle computation")
-                eyes = openxr.get_eyes_poses()
-                print(eyes)
-                perf_bench.mark("Apply eye positions")
+                if renderer is not None:
+                    renderer.update_eyes()
+                    perf_bench.mark("Apply eye positions")
                 engine.move_finger(angle)
                 perf_bench.mark("Apply finger rotation")
                 engine.step_simulation()
                 perf_bench.mark("Do simulation step")
+                if renderer is not None:
+                    renderer.render_scene()
+                    perf_bench.mark("Render scene")
                 force = engine.get_contact_force()
                 perf_bench.mark("Get contact force")
                 weart.apply_force(force)
@@ -67,12 +73,16 @@ def simulation(engine: Engine, weart: WeartConnector, openxr: OpenXrConnector):
             engine.stop_simulation()
             listener.stop()
 
-    t = Thread(target=loop)
-    t.start()
-    # we must run the loop in another thread because the graph can only be visualized in the main thread...
-    #perf_bench.graph_viz(max_points=80, use_time=True)
-    force_plot.graph_viz(max_points=10000, y_axis="Force")
-    t.join()
+    threaded = False
+    if threaded:
+        t = Thread(target=loop)
+        t.start()
+        # we must run the loop in another thread because the graph can only be visualized in the main thread...
+        #perf_bench.graph_viz(max_points=80, use_time=True)
+        #force_plot.graph_viz(max_points=10000, y_axis="Force")
+        t.join()
+    else:
+        loop()
 
 if __name__ == "__main__":
     print("Starting script...\n")
@@ -91,6 +101,8 @@ if __name__ == "__main__":
     with OpenXrConnector() as openxr:
         print("OpenXr context created.")
 
+        renderer = MujocoRenderer(mujoco, openxr)
+
         print("Connecting to WEART...")
         with WeartConnector() as weart:
             print("Connected. Calibrating...")
@@ -98,4 +110,4 @@ if __name__ == "__main__":
             weart.calibrate()
             print("Calibrated.\n")
 
-            simulation(engine, weart, openxr)
+            simulation(engine, weart, openxr, renderer)
