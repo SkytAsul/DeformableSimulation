@@ -118,7 +118,7 @@ class OpenXrExample(object):
         self.logger = logging.getLogger("gl_example")
         self.logger.setLevel(log_level)
         self.debug_callback = xr.PFN_xrDebugUtilsMessengerCallbackEXT(self.debug_callback_py)
-        self.mirror_window = True
+        self.mirror_window = False
         self.instance = None
         self.system_id = None
         self.pxrCreateDebugUtilsMessengerEXT = None
@@ -307,8 +307,8 @@ class OpenXrExample(object):
                 self.render_target_size[0] // 2,
                 self.render_target_size[1],
             )
-            if eye_index == 1:
-                layer_view.sub_image.image_rect.offset.x = layer_view.sub_image.image_rect.extent.width
+            # if eye_index == 1:
+            #     layer_view.sub_image.image_rect.offset.x = layer_view.sub_image.image_rect.extent.width
 
     def prepare_gl_framebuffer(self):
         glfw.make_context_current(self.window)
@@ -341,7 +341,7 @@ class OpenXrExample(object):
 
     def prepare_mujoco(self):
         self.first = True
-        self._model = mujoco.MjModel.from_xml_path("assets/MuJoCo scene.xml")
+        self._model = mujoco.MjModel.from_xml_path("assets/balloons.xml")
         self._data = mujoco.MjData(self._model)
         self._scene = mujoco.MjvScene(self._model, 1000)
         self._context = mujoco.MjrContext(self._model, mujoco.mjtFontScale.mjFONTSCALE_100)
@@ -435,6 +435,14 @@ class OpenXrExample(object):
             frame_end_info.layers = [ctypes.byref(self.projection_layer), ]
         xr.end_frame(self.session, frame_end_info)
 
+    @staticmethod
+    def quat_mj2xr(mj_quat):
+        return [*mj_quat[1:4], mj_quat[0]]
+
+    @staticmethod
+    def quat_xr2mj(xr_quat):
+        return [xr_quat[3], *xr_quat[0:3]]
+
     def update_xr_views(self):
         vi = xr.ViewLocateInfo(
             xr.ViewConfigurationType.PRIMARY_STEREO,
@@ -457,30 +465,20 @@ class OpenXrExample(object):
             cam.frustum_center = 0.5 * (tan(view_state.fov.angle_left) + tan(view_state.fov.angle_right)) * FRUSTUM_NEAR
             # no need to set left/right as it will be computed using center
 
-            # forw = np.array(rot_quat[1:4])
-            # forw /= np.linalg.norm(forw)
-            # cam.forward = forw.tolist()
             forward = np.zeros(3)
             up = np.zeros(3)
 
-            inv_indexes = [0, 2] # 0, 2 quasi perf, only up/down reverse
-            for i in inv_indexes: rot_quat[i] = -rot_quat[i]
-
-            mujoco.mju_rotVecQuat(forward, [0, 0, -1], rot_quat)
-            mujoco.mju_rotVecQuat(up, [0, -1, 0], rot_quat)
-            # forward, up = -forward, -up
+            mujoco.mju_rotVecQuat(forward, [0, 0, -1], OpenXrExample.quat_xr2mj(rot_quat))
+            mujoco.mju_rotVecQuat(up, [0, 1, 0], OpenXrExample.quat_xr2mj(rot_quat))
 
             cam.forward = forward.tolist()
             cam.up = up.tolist()
-
-            #cam.forward = [0, 0, -1]
-            #cam.up = [0, 1, 0]
         
         self._scene.enabletransform = True
         self._scene.translate[0] = 0.;
         #self._scene.translate[1] = 1.;
         self._scene.translate[2] = -1;
-        self._scene.rotate[0] = cos(-0.25 * pi);
+        self._scene.rotate[0] = cos(0.25 * pi);
         self._scene.rotate[1] = sin(-0.25 * pi);
         self._scene.rotate[2] = 0;
         self._scene.rotate[3] = 0;
