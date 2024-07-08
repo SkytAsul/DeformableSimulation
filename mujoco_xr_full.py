@@ -13,7 +13,7 @@ import xr
 import mujoco
 
 from math import tan, cos, sin, pi
-import numpy as np # TODO add to requirements if really needed
+import numpy as np # present in MuJoCo
 
 ALL_SEVERITIES = (
     xr.DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
@@ -118,7 +118,7 @@ class OpenXrExample(object):
         self.logger = logging.getLogger("gl_example")
         self.logger.setLevel(log_level)
         self.debug_callback = xr.PFN_xrDebugUtilsMessengerCallbackEXT(self.debug_callback_py)
-        self.mirror_window = False
+        self.mirror_window = True
         self.instance = None
         self.system_id = None
         self.pxrCreateDebugUtilsMessengerEXT = None
@@ -141,8 +141,6 @@ class OpenXrExample(object):
         self.swapchain_create_info = xr.SwapchainCreateInfo()
         self.swapchain = None
         self.swapchain_images = None
-        self.fbo_id = None
-        self.fbo_depth_buffer = None
         self.quit = False
         self.session_state = xr.SessionState.IDLE
         self.frame_state = xr.FrameState()
@@ -248,9 +246,9 @@ class OpenXrExample(object):
             raise RuntimeError("GLFW initialization failed")
         if not self.mirror_window:
             glfw.window_hint(glfw.VISIBLE, False)
-        # glfw.window_hint(glfw.SAMPLES, 0)
+            glfw.window_hint(glfw.SAMPLES, 0)
         glfw.window_hint(glfw.DOUBLEBUFFER, False)
-        self.window_size = [self.render_target_size[0], self.render_target_size[1] // 2]
+        self.window_size = [self.render_target_size[0] // 2, self.render_target_size[1] // 2]
         self.window = glfw.create_window(*self.window_size, "gl_example", None, None)
         if self.window is None:
             raise RuntimeError("Failed to create GLFW window")
@@ -284,8 +282,8 @@ class OpenXrExample(object):
             self.logger.debug(f"Session supports swapchain format {stringForFormat[scf]}")
 
     def prepare_xr_swapchain(self):
-        self.swapchain_create_info.usage_flags = xr.SWAPCHAIN_USAGE_TRANSFER_DST_BIT | xr.SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
-        self.swapchain_create_info.format = GL.GL_SRGB8_ALPHA8
+        self.swapchain_create_info.usage_flags = xr.SWAPCHAIN_USAGE_TRANSFER_DST_BIT | xr.SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | xr.SWAPCHAIN_USAGE_SAMPLED_BIT
+        self.swapchain_create_info.format = GL.GL_RGBA8
         self.swapchain_create_info.sample_count = 1
         self.swapchain_create_info.array_size = 1
         self.swapchain_create_info.face_count = 1
@@ -306,60 +304,58 @@ class OpenXrExample(object):
             layer_view.sub_image.image_rect.extent = xr.Extent2Di(
                 self.render_target_size[0] // 2,
                 self.render_target_size[1],
-            )
-            # if eye_index == 1:
-            #     layer_view.sub_image.image_rect.offset.x = layer_view.sub_image.image_rect.extent.width
+            )   
+            # the following causes MuJoCo to render blank to the right eye
+            if eye_index == 1:
+                layer_view.sub_image.image_rect.offset.x = layer_view.sub_image.image_rect.extent.width
 
     def prepare_gl_framebuffer(self):
+        w, h = self.swapchain_create_info.width, self.swapchain_create_info.height
         glfw.make_context_current(self.window)
-        self.fbo_depth_buffer = GL.glGenRenderbuffers(1)
-        GL.glBindRenderbuffer(GL.GL_RENDERBUFFER, self.fbo_depth_buffer)
-        if self.swapchain_create_info.sample_count == 1:
-            GL.glRenderbufferStorage(
-                GL.GL_RENDERBUFFER,
-                GL.GL_DEPTH24_STENCIL8,
-                self.swapchain_create_info.width,
-                self.swapchain_create_info.height,
-            )
-        else:
-            GL.glRenderbufferStorageMultisample(
-                GL.GL_RENDERBUFFER,
-                self.swapchain_create_info.sample_count,
-                GL.GL_DEPTH24_STENCIL8,
-                self.swapchain_create_info.width,
-                self.swapchain_create_info.height,
-            )
-        self.fbo_id = GL.glGenFramebuffers(1)
-        GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, self.fbo_id)
-        GL.glFramebufferRenderbuffer(
-            GL.GL_DRAW_FRAMEBUFFER,
-            GL.GL_DEPTH_STENCIL_ATTACHMENT,
-            GL.GL_RENDERBUFFER,
-            self.fbo_depth_buffer,
-        )
+
+        # FBO
+        self.sw_fbo = GL.glGenFramebuffers(1)
+        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.sw_fbo)
+        GL.glViewport(0, 0, w, h)
+
+        # COLOR
+
+
+        # DEPTH
+        self.fbo_depth_tex = GL.glGenTextures(1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self.fbo_depth_tex)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE)
+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_DEPTH_COMPONENT32, w, h, 0, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT, None)
+
+        if self.mirror_window:
+            self.fbo_downsample = GL.glGenBuffers(1)
+            self.tex_dowmsample = GL.glGenTextures(1)
+            GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.fbo_downsample)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex_dowmsample)
+            GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA8, *self.window_size, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, None)
+            GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, self.tex_dowmsample, 0)
+
         GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, 0)
 
     def prepare_mujoco(self):
         self.first = True
-        self._model = mujoco.MjModel.from_xml_path("assets/balloons.xml")
+        self._model = mujoco.MjModel.from_xml_path("assets/MuJoCo scene.xml")
         self._data = mujoco.MjData(self._model)
         self._scene = mujoco.MjvScene(self._model, 1000)
         self._context = mujoco.MjrContext(self._model, mujoco.mjtFontScale.mjFONTSCALE_100)
         self._camera = mujoco._structs.MjvCamera()
-        # self._camera.azimuth = 138
-        # self._camera.distance = 0.5
-        # self._camera.elevation = -16
-        # self._camera.lookat = [0, 0, 0.1]
         self._camera.azimuth = 0
         self._camera.distance = 0
         self._camera.elevation = 0
         self._camera.lookat = [0, 0, 0]
-        # mujoco.mjv_defaultFreeCamera(self._model, self._camera) # SETS DEFAULT THINGS
+        # The following sets default things we do not want
+        # mujoco.mjv_defaultFreeCamera(self._model, self._camera)
         self._model.vis.global_.offwidth = self.render_target_size[0]
         self._model.vis.global_.offheight = self.render_target_size[1]
-        self._context.offWidth = self.render_target_size[0]
-        self._context.offHeight = self.render_target_size[1]
-        mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN, self._context)
+        mujoco.mjr_resizeOffscreen(*self.render_target_size, self._context)
 
         self._option = mujoco.MjvOption()
         mujoco.mjv_defaultOption(self._option)
@@ -436,10 +432,6 @@ class OpenXrExample(object):
         xr.end_frame(self.session, frame_end_info)
 
     @staticmethod
-    def quat_mj2xr(mj_quat):
-        return [*mj_quat[1:4], mj_quat[0]]
-
-    @staticmethod
     def quat_xr2mj(xr_quat):
         return [xr_quat[3], *xr_quat[0:3]]
 
@@ -467,22 +459,21 @@ class OpenXrExample(object):
 
             forward = np.zeros(3)
             up = np.zeros(3)
-
             mujoco.mju_rotVecQuat(forward, [0, 0, -1], OpenXrExample.quat_xr2mj(rot_quat))
             mujoco.mju_rotVecQuat(up, [0, 1, 0], OpenXrExample.quat_xr2mj(rot_quat))
-
             cam.forward = forward.tolist()
             cam.up = up.tolist()
+            # cam.forward = [0, 0, -1]
+            # cam.up = [0, 1 if eye_index == 1 else -1, 0]
         
         self._scene.enabletransform = True
-        self._scene.translate[0] = 0.;
-        #self._scene.translate[1] = 1.;
-        self._scene.translate[2] = -1;
+        self._scene.translate[0] = 0;
+        self._scene.translate[2] = 0;
         self._scene.rotate[0] = cos(0.25 * pi);
         self._scene.rotate[1] = sin(-0.25 * pi);
         self._scene.rotate[2] = 0;
         self._scene.rotate[3] = 0;
-        # self._scene.scale = 1;
+        self._scene.scale = 1;
 
     def render(self):
         ai = xr.SwapchainImageAcquireInfo(None)
@@ -490,54 +481,69 @@ class OpenXrExample(object):
         wi = xr.SwapchainImageWaitInfo(xr.INFINITE_DURATION)
         xr.wait_swapchain_image(self.swapchain, wi)
         glfw.make_context_current(self.window)
-        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.fbo_id)
-        sw_image = self.swapchain_images[swapchain_index]
-        GL.glFramebufferTexture(
-            GL.GL_FRAMEBUFFER,
-            GL.GL_COLOR_ATTACHMENT0,
-            sw_image.image,
-            0,
-        )
-        # "render" to the swapchain image
-
         w, h = self.render_target_size
-        # viewport = mujoco.mjr_maxViewport(self._context)
-        # print(f"Viewport: {viewport}, w/h: {w} {h}, global: {self._model.vis.global_}")
+
+        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.sw_fbo)
+        sw_image = self.swapchain_images[swapchain_index]
+
+        # GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+        # GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+        # GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
+        # GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE);
+        # # GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA8, w, h, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, None);
+
+        GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, sw_image.image, 0)
+        # GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_DEPTH_ATTACHMENT, GL.GL_TEXTURE_2D, self.fbo_depth_tex, 0)
+
+        # print("INFO")
+        # print(hex(GL.glGetFramebufferAttachmentParameteriv(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING)))
+        # print(hex(GL.glGetFramebufferAttachmentParameteriv(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE)))
+        # print(hex(GL.glGetFramebufferAttachmentParameteriv(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE)))
+
         viewport = mujoco.MjrRect(0, 0, w, h)
 
-        GL.glEnable(GL.GL_SCISSOR_TEST)
-        GL.glScissor(0, 0, w // 2, h)
-        GL.glClearColor(0, 1, 0, 1)
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-        GL.glScissor(w // 2, 0, w // 2, h)
-        GL.glClearColor(0, 0, 1, 1)
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-        GL.glDisable(GL.GL_SCISSOR_TEST)
+        # print("Skybox:", self._scene.flags[mujoco.mjtRndFlag.mjRND_SKYBOX])
+        # print("Reflection:", self._scene.flags[mujoco.mjtRndFlag.mjRND_REFLECTION])
 
-        #print("Left camera:", self._scene.camera[0])
+        # GL.glEnable(GL.GL_SCISSOR_TEST)
+        # GL.glScissor(0, 0, w // 2, h)
+        # GL.glClearColor(0, 1, 0, 1)
+        # GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+        # GL.glScissor(w // 2, 0, w // 2, h)
+        # GL.glClearColor(0, 0, 1, 1)
+        # GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+        # GL.glDisable(GL.GL_SCISSOR_TEST)
 
+        mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN, self._context)
         mujoco.mjr_render(viewport, self._scene, self._context)
+
+        GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self._context.offFBO)
+        GL.glReadBuffer(GL.GL_COLOR_ATTACHMENT0)
+        GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, self.sw_fbo)
+        GL.glDrawBuffer(GL.GL_COLOR_ATTACHMENT0)
+        GL.glBlitFramebuffer(
+            0, 0,
+            w, h,
+            0, 0,
+            w, h,
+            GL.GL_COLOR_BUFFER_BIT,
+            GL.GL_NEAREST
+        )
 
         if self.mirror_window:
             # fast blit from the fbo to the window surface
+            GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self.sw_fbo)
             GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, 0)
-            GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self.fbo_id) # added
-            # drawB = GL.glGetIntegerv(GL.GL_DRAW_FRAMEBUFFER_BINDING)
-            # readB = GL.glGetIntegerv(GL.GL_READ_FRAMEBUFFER_BINDING)
-            # drawS = GL.glGetFramebufferParameteriv(GL.GL_DRAW_FRAMEBUFFER, GL.GL_SAMPLES)
-            # readS = GL.glGetFramebufferParameteriv(GL.GL_READ_FRAMEBUFFER, GL.GL_SAMPLES)
-            # drawSB = GL.glGetFramebufferParameteriv(GL.GL_DRAW_FRAMEBUFFER, GL.GL_SAMPLE_BUFFERS)
-            # print(f"Draw {drawB}: {drawS} {drawSB}, Read {readB}: {readS}, VR FBO {self.fbo_id}")
             GL.glBlitFramebuffer(
                 0, 0,
-                #w, h,
-                *self.window_size, # for some reason, we need to have the same size (because GL_SAMPLE_BUFFERS != 0)
+                w, h,
                 0, 0,
                 *self.window_size,
                 GL.GL_COLOR_BUFFER_BIT,
-                GL.GL_NEAREST
+                0x90BA # EXT_framebuffer_multisample_blit_scaled
             )
-            GL.glFramebufferTexture(GL.GL_READ_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, 0, 0)
+
+            # GL.glFramebufferTexture(GL.GL_READ_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, 0, 0)
             GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, 0)
         ri = xr.SwapchainImageReleaseInfo()
         xr.release_swapchain_image(self.swapchain, ri)
@@ -549,12 +555,12 @@ class OpenXrExample(object):
     def __exit__(self, exc_type, exc_value, traceback):
         if self.window is not None:
             glfw.make_context_current(self.window)
-            if self.fbo_id is not None:
-                GL.glDeleteFramebuffers(1, [self.fbo_id])
-                self.fbo_id = None
-            if self.fbo_depth_buffer is not None:
-                GL.glDeleteRenderbuffers(1, [self.fbo_depth_buffer])
-                self.fbo_depth_buffer = None
+            if self.sw_fbo is not None:
+                GL.glDeleteFramebuffers(1, [self.sw_fbo])
+                self.sw_fbo = None
+            # if self.fbo_depth_buffer is not None:
+            #     GL.glDeleteRenderbuffers(1, [self.fbo_depth_buffer])
+            #     self.fbo_depth_buffer = None
             glfw.terminate()
             self.window = None
         if self.swapchain is not None:
