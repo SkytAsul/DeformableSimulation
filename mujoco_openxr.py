@@ -5,22 +5,24 @@ import platform
 import ctypes
 import numpy
 from OpenGL import GL
+from typing import Optional
 
 APP_NAME = "MuJoCo XR Viewer"
 FRUSTUM_NEAR = 0.05
 FRUSTUM_FAR = 50
 
 class MujocoXRViewer:
-    def __init__(self, mirror_window = False, debug = False):
+    def __init__(self, mirror_window = False, debug = False, samples: Optional[int] = None):
         self._mirror_window = mirror_window
         self._debug = debug
+        self._samples = samples
         self._should_quit = False
     
     def __enter__(self):
-        self._init_xr() # To fetch render size
-        self._init_window() # We initialize the OpenGL context with render size
-        self._prepare_xr() # We prepare everything needed for the headset
-        self._prepare_mujoco() # We prepare everything needed for simulation
+        self._init_xr()
+        self._init_window()
+        self._prepare_xr()
+        self._prepare_mujoco()
         return self
 
     def _init_xr(self):
@@ -100,10 +102,11 @@ class MujocoXRViewer:
         """
         if not glfw.init():
             raise RuntimeError("GLFW initialization failed")
+        glfw.window_hint(glfw.DOUBLEBUFFER, False)
+        glfw.window_hint(glfw.RESIZABLE, False)
+        glfw.window_hint(glfw.SAMPLES, 0) # no need for multisampling here, we will resolve ourselves
         if not self._mirror_window:
             glfw.window_hint(glfw.VISIBLE, False)
-            glfw.window_hint(glfw.SAMPLES, 0)
-        glfw.window_hint(glfw.DOUBLEBUFFER, False)
         self._window_size = [self._width // 2, self._height // 2]
         self._window = glfw.create_window(*self._window_size, APP_NAME, None, None)
         if self._window is None:
@@ -115,7 +118,7 @@ class MujocoXRViewer:
     
     def _prepare_xr(self):
         """
-        Creates the OpenXR session and prepare everything to launch the frames loop.
+        Creates the OpenXR session and prepares everything to launch the frames loop.
         """
         if platform.system() == 'Windows':
             from OpenGL import WGL
@@ -142,7 +145,7 @@ class MujocoXRViewer:
         self._xr_swapchain = xr.create_swapchain(self._xr_session, xr.SwapchainCreateInfo(
             usage_flags=xr.SWAPCHAIN_USAGE_TRANSFER_DST_BIT | xr.SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | xr.SWAPCHAIN_USAGE_SAMPLED_BIT,
             format=GL.GL_RGBA8,
-            sample_count=1,
+            sample_count=1 if self._samples is None else self._samples,
             array_size=1,
             face_count=1,
             mip_count=1,
@@ -177,12 +180,18 @@ class MujocoXRViewer:
         self._mj_data = mujoco.MjData(self._mj_model)
         self._mj_scene = mujoco.MjvScene(self._mj_model, 1000)
         self._mj_scene.stereo = mujoco.mjtStereo.mjSTEREO_SIDEBYSIDE
+
+        # We want the visualization properties set BEFORE creation of the context,
+        # otherwise we would have to call mjr_resizeOffscreen.
+        self._mj_model.vis.global_.offwidth = self._width_render
+        self._mj_model.vis.global_.offheight = self._height
+        self._mj_model.vis.quality.offsamples = 0 if self._samples is None else self._samples
+
         self._mj_context = mujoco.MjrContext(self._mj_model, mujoco.mjtFontScale.mjFONTSCALE_100)
         self._mj_camera = mujoco._structs.MjvCamera()
         self._mj_option = mujoco.MjvOption()
         # We do NOT want to call mjv_defaultFreeCamera
 
-        mujoco.mjr_resizeOffscreen(self._width_render, self._height, self._mj_context)
         mujoco.mjv_defaultOption(self._mj_option)
     
     def _update_mujoco(self):
@@ -283,7 +292,13 @@ class MujocoXRViewer:
         # Once we acquired it, we bind the image to our framebuffer object
         glfw.make_context_current(self._window)
         GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._xr_swapchain_fbo)
-        GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, self._xr_swapchain_images[image_index].image, 0)
+        GL.glFramebufferTexture2D(
+            GL.GL_FRAMEBUFFER,
+            GL.GL_COLOR_ATTACHMENT0,
+            GL.GL_TEXTURE_2D if self._samples == None else GL.GL_TEXTURE_2D_MULTISAMPLE,
+            self._xr_swapchain_images[image_index].image,
+            0
+        )
         
         # We ask MuJoCo to render on its own offscreen framebuffer
         mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN, self._mj_context)
@@ -291,9 +306,7 @@ class MujocoXRViewer:
 
         # We copy what MuJoCo rendered on our framebuffer object
         GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self._mj_context.offFBO)
-        GL.glReadBuffer(GL.GL_COLOR_ATTACHMENT0) # TODO see if necessary
         GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, self._xr_swapchain_fbo)
-        GL.glDrawBuffer(GL.GL_COLOR_ATTACHMENT0)
         GL.glBlitFramebuffer(
             0, 0,
             self._width_render, self._height,
@@ -305,6 +318,20 @@ class MujocoXRViewer:
 
         if self._mirror_window:
             # We copy the data from the MuJoCo buffer to the window one (0 is the default window fbo)
+            if self._samples is not None:
+                # We first resolve multi-sample if needed
+                GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, self._mj_context.offFBO_r)
+                GL.glBlitFramebuffer(
+                    0, 0,
+                    self._width_render, self._height,
+                    0, 0,
+                    self._width_render, self._height,
+                    GL.GL_COLOR_BUFFER_BIT,
+                    GL.GL_NEAREST
+                )
+                GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self._mj_context.offFBO_r)
+
+            # We then copy the data to the window
             GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, 0)
             GL.glBlitFramebuffer(
                 0, 0,
@@ -312,14 +339,9 @@ class MujocoXRViewer:
                 0, 0,
                 *self._window_size,
                 GL.GL_COLOR_BUFFER_BIT,
-                0x90BA # EXT_framebuffer_multisample_blit_scaled
+                0x90BA # EXT_framebuffer_multisample_blit_scaled, SCALED_RESOLVE_FASTEST_EXT
             )
         xr.release_swapchain_image(self._xr_swapchain, xr.SwapchainImageReleaseInfo())
-
-        # If we're mirror make sure to do the potentially blocking command
-        # AFTER we've released the swapchain image
-        if self._mirror_window:
-            glfw.swap_buffers(self._window)
     
     def __exit__(self, exc_type, exc_value, traceback):
         if self._window is not None:
@@ -359,5 +381,5 @@ class MujocoXRViewer:
             self.frame()
 
 if __name__ == "__main__":
-    with MujocoXRViewer(debug=True, mirror_window=True) as mjxr:
+    with MujocoXRViewer(debug=True, mirror_window=True, samples=8) as mjxr:
         mjxr.loop()
