@@ -7,14 +7,14 @@ import numpy
 from OpenGL import GL
 from typing import Optional
 
-from interfaces import Visualizer
+from interfaces import Visualizer, HandPoseProvider
 from mujoco_connector import MujocoConnector
 
 APP_NAME = "Deformable Simulation"
 FRUSTUM_NEAR = 0.05
 FRUSTUM_FAR = 50
 
-class MujocoXRVisualizer(Visualizer):
+class MujocoXRVisualizer(Visualizer, HandPoseProvider):
     def __init__(self, mj: MujocoConnector, mirror_window = False, debug = False, samples: Optional[int] = None):
         self._mj_connector = mj
         self._mirror_window = mirror_window
@@ -25,7 +25,8 @@ class MujocoXRVisualizer(Visualizer):
     def __enter__(self):
         self._init_xr()
         self._init_window()
-        self._prepare_xr()
+        self._prepare_xr_rendering()
+        self._prepare_xr_hand_tracking()
         self._prepare_mujoco()
         return self
 
@@ -120,7 +121,7 @@ class MujocoXRVisualizer(Visualizer):
         # it will interfere with the OpenXR frame loop timing
         glfw.swap_interval(0)
     
-    def _prepare_xr(self):
+    def _prepare_xr_rendering(self):
         """
         Creates the OpenXR session and prepares everything to launch the frames loop.
         """
@@ -159,10 +160,8 @@ class MujocoXRVisualizer(Visualizer):
         self._xr_swapchain_images = xr.enumerate_swapchain_images(self._xr_swapchain, xr.SwapchainImageOpenGLKHR)
 
         self._xr_projection_layer = xr.CompositionLayerProjection(
-            space=xr.create_reference_space(self._xr_session, xr.ReferenceSpaceCreateInfo(
-                reference_space_type=xr.ReferenceSpaceType.STAGE,
-                pose_in_reference_space=xr.Posef(xr.Quaternionf(), xr.Vector3f())
-            )),
+            # Default space params are okay: identity quaternion and zero vector. Let's use them.
+            space=xr.create_reference_space(self._xr_session, xr.ReferenceSpaceCreateInfo()),
             views = [xr.CompositionLayerProjectionView(
                 sub_image=xr.SwapchainSubImage(
                     swapchain=self._xr_swapchain,
@@ -175,6 +174,35 @@ class MujocoXRVisualizer(Visualizer):
         )
 
         self._xr_swapchain_fbo = GL.glGenFramebuffers(1)
+    
+    def _prepare_xr_hand_tracking(self):
+        subaction_path = xr.string_to_path(self._xr_instance, "/user/hand/right")
+        self._action_set = xr.create_action_set(
+            instance=self._xr_instance,
+            create_info=xr.ActionSetCreateInfo(
+                action_set_name="default_action_set",
+                localized_action_set_name="Default Action Set",
+                priority=0,
+            ),
+        )
+        action = xr.create_action(self._action_set, xr.ActionCreateInfo(
+            action_type=xr.ActionType.POSE_INPUT,
+            action_name="hand_pose",
+            localized_action_name="Hand Pose",
+            subaction_paths=[subaction_path]
+        ))
+        xr.suggest_interaction_profile_bindings(self._xr_instance, xr.InteractionProfileSuggestedBinding(
+            interaction_profile=xr.string_to_path(self._xr_instance, "/interaction_profiles/khr/simple_controller"),
+            suggested_bindings=[xr.ActionSuggestedBinding(
+                action=action,
+                binding=xr.string_to_path(self._xr_instance, "/user/hand/right/input/grip/pose")
+            )]
+        ))
+        self._action_space = xr.create_action_space(self._xr_session, xr.ActionSpaceCreateInfo(
+            action=action,
+            subaction_path=subaction_path
+        ))
+        xr.attach_session_action_sets(self._xr_session, xr.SessionActionSetsAttachInfo(action_sets=[self._action_set]))
 
     def _prepare_mujoco(self):
         """
@@ -218,6 +246,9 @@ class MujocoXRVisualizer(Visualizer):
             xr.SessionState.SYNCHRONIZED,
             xr.SessionState.VISIBLE,
         ]:
+            if self._xr_session_state == xr.SessionState.FOCUSED:
+                self._fetch_actions()
+            
             self._xr_frame_state = xr.wait_frame(self._xr_session, xr.FrameWaitInfo())
             xr.begin_frame(self._xr_session, None)
             return True
@@ -274,7 +305,7 @@ class MujocoXRVisualizer(Visualizer):
             rot_quat = list(view_state.pose.orientation)
             # Guess what? OpenXR quaternions are in form (x, y, z, w)
             # while MuJoCo quaternions are in form (w, x, y, z)...
-            rot_quat = [rot_quat[3], *rot_quat[0:3]]
+            rot_quat = quat_xr2mj(rot_quat)
 
             forward, up = numpy.zeros(3), numpy.zeros(3)
             mujoco.mju_rotVecQuat(forward, [0, 0, -1], rot_quat)
@@ -284,6 +315,12 @@ class MujocoXRVisualizer(Visualizer):
         self._mj_scene.enabletransform = True
         self._mj_scene.rotate[0] = numpy.cos(0.25 * numpy.pi)
         self._mj_scene.rotate[1] = numpy.sin(-0.25 * numpy.pi)
+
+    def _fetch_actions(self):
+        xr.sync_actions(self._xr_session, xr.ActionsSyncInfo(active_action_sets = ctypes.pointer(xr.ActiveActionSet(
+            action_set=self._action_set,
+            subaction_path=xr.NULL_PATH # wildcard to get all actions
+        ))))
 
     def _render(self):
         """
@@ -382,5 +419,25 @@ class MujocoXRVisualizer(Visualizer):
             self._render()
         self._end_xr_frame()
 
-    def should_exit(self) -> bool:
+    def should_exit(self):
         return self._should_quit
+    
+    def get_hand_pose(self, hand_id: int):
+        space_location = xr.locate_space(
+            space=self._action_space,
+            base_space=self._xr_projection_layer.space,
+            time=self._xr_frame_state.predicted_display_time
+        )
+        if (space_location.location_flags & xr.SPACE_LOCATION_POSITION_VALID_BIT
+            and space_location.location_flags & xr.SPACE_LOCATION_ORIENTATION_VALID_BIT):
+            
+            hand_pos = numpy.zeros(3)
+            hand_rot = numpy.zeros(4)
+            mujoco.mjv_room2model(hand_pos, hand_rot, list(space_location.pose.position), quat_xr2mj(space_location.pose.orientation), self._mj_scene)
+            return hand_pos, hand_rot
+        else:
+            return None
+
+@staticmethod
+def quat_xr2mj(xr_quat):
+    return [xr_quat[3], *xr_quat[0:3]]

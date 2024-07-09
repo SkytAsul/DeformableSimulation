@@ -6,6 +6,8 @@ class Engine:
             angle (float): new angle of the finger, in radians
         """
         pass
+    def move_hand(self, hand_id: int, position: list[int], rotation: list[int]):
+        pass
     def get_contact_force(self) -> float:
         """Get the force the finger should feel in contact with the environment
 

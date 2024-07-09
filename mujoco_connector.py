@@ -24,6 +24,8 @@ class MujocoConnector(Engine):
         self._finger_axis_point = finger.pos.copy()
         self._finger_axis_point[1] -= finger_geom.size[1]
 
+        self._right_hand_id = self.model.body("right_hand").mocapid[0]
+
     def move_finger(self, angle : float):
         rot = np.array([.0, .0, .0, .0])
         mj.mju_euler2Quat(rot, [-angle, 0, 0], "xyz")
@@ -32,6 +34,10 @@ class MujocoConnector(Engine):
         mj.mju_rotVecQuat(self.data.mocap_pos[self._finger_id], self._finger_base_pos - self._finger_axis_point, rot)
         self.data.mocap_pos[self._finger_id] += self._finger_axis_point
     
+    def move_hand(self, hand_id: int, position: list[int], rotation: list[int]):
+        self.data.mocap_pos[self._right_hand_id] = position
+        self.data.mocap_quat[self._right_hand_id] = rotation
+
     def get_contact_force(self) -> float:
         data = self.data.sensor("fingertip_sensor").data
         # data is an array containing only one number: the normal force

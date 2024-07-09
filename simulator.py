@@ -7,6 +7,7 @@ from weart import WeartConnector
 from benchmarking import Benchmarker, Plotter
 
 # libraries
+from contextlib import nullcontext
 from threading import Thread
 import math
 
@@ -46,6 +47,11 @@ def simulation(engine: Engine,
 
                     engine.move_finger(angle)
                     perf_bench.mark("Apply finger rotation")
+
+                if hand is not None:
+                    hand_pose = hand.get_hand_pose(0)
+                    if hand_pose is not None:
+                        engine.move_hand(0, *hand_pose)
 
                 engine.step_simulation()
                 perf_bench.mark("Do simulation step")
@@ -89,30 +95,52 @@ def simulation(engine: Engine,
         loop()
 
 if __name__ == "__main__":
+    used_engine = "mujoco"
+    used_viz = "openxr"
+    use_weart = False
+    # scene_path = "assets/MuJoCo scene.xml"
+    scene_path = "assets/balloons.xml"
+
     print("Starting script...\n")
 
-    # print("Connecting to Coppelia...")
-    # copp = CoppeliaConnector()
-    # print("Connected.\n")
+    engine = visualizer = weart = hand = None
 
-    print("Loading MuJoCo...")
-    mujoco = MujocoConnector("assets/MuJoCo scene.xml")
-    print("Loaded.")
+    match used_engine:
+        case "mujoco":
+            print("Loading MuJoCo...")
+            engine = mujoco = MujocoConnector(scene_path)
+            print("Loaded.")
+        case "coppelia":
+            print("Connecting to Coppelia...")
+            engine = CoppeliaConnector()
+            print("Connected.\n")
+        case _:
+            raise RuntimeError("Invalid engine name")
 
-    engine = mujoco
+    match used_viz:
+        case "simple":
+            visualizer_ctx = nullcontext(MujocoSimpleVisualizer(mujoco))
+        case "openxr":
+            print("Loading Virtual Reality...")
+            visualizer_ctx = hand = MujocoXRVisualizer(mujoco)
+        case _:
+            raise RuntimeError("Invalid visualizer name")
 
-    print("Loading Virtual Reality...")
-    with MujocoXRVisualizer(mujoco) as visualizer:
-        print("OpenXR visualizer created.")
-    # if True:
+    with visualizer_ctx as visualizer:
+        print("Visualizer created.")
 
-        #visualizer = MujocoSimpleVisualizer(mujoco)
+        if use_weart:
+            print("Connecting to WEART...")
+            weart_ctx = WeartConnector()
+        else:
+            weart_ctx = nullcontext()
 
-        print("Connecting to WEART...")
-        with WeartConnector() as weart:
-            print("Connected. Calibrating...")
+        with weart_ctx as weart:
+            
+            if use_weart:
+                print("Connected. Calibrating...")
 
-            weart.calibrate()
-            print("Calibrated.\n")
+                weart.calibrate()
+                print("Calibrated.\n")
 
-            simulation(engine, weart, visualizer, None)
+            simulation(engine, weart, visualizer, hand)
