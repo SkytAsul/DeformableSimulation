@@ -7,12 +7,16 @@ import numpy
 from OpenGL import GL
 from typing import Optional
 
-APP_NAME = "MuJoCo XR Viewer"
+from interfaces import Visualizer
+from mujoco_connector import MujocoConnector
+
+APP_NAME = "Deformable Simulation"
 FRUSTUM_NEAR = 0.05
 FRUSTUM_FAR = 50
 
-class MujocoXRViewer:
-    def __init__(self, mirror_window = False, debug = False, samples: Optional[int] = None):
+class MujocoXRVisualizer(Visualizer):
+    def __init__(self, mj: MujocoConnector, mirror_window = False, debug = False, samples: Optional[int] = None):
+        self._mj_connector = mj
         self._mirror_window = mirror_window
         self._debug = debug
         self._samples = samples
@@ -176,8 +180,8 @@ class MujocoXRViewer:
         """
         Prepares the MuJoCo environment.
         """
-        self._mj_model = mujoco.MjModel.from_xml_path("assets/balloons.xml")
-        self._mj_data = mujoco.MjData(self._mj_model)
+        self._mj_model = self._mj_connector.model
+        self._mj_data = self._mj_connector.data
         self._mj_scene = mujoco.MjvScene(self._mj_model, 1000)
         self._mj_scene.stereo = mujoco.mjtStereo.mjSTEREO_SIDEBYSIDE
 
@@ -198,7 +202,7 @@ class MujocoXRViewer:
         """
         Updates MuJoCo for one frame.
         """
-        mujoco.mj_step(self._mj_model, self._mj_data)
+        # The simulation is being stepped outside
         mujoco.mjv_updateScene(self._mj_model, self._mj_data, self._mj_option, None, self._mj_camera, mujoco.mjtCatBit.mjCAT_ALL, self._mj_scene)
 
     def _start_xr_frame(self):
@@ -360,7 +364,7 @@ class MujocoXRViewer:
             pass # does not seem to work
         glfw.terminate()
 
-    def frame(self):
+    def start_frame(self):
         glfw.poll_events()
         self._poll_xr_events()
         if glfw.window_should_close(self._window):
@@ -369,17 +373,14 @@ class MujocoXRViewer:
         if self._should_quit:
             return
         
-        if self._start_xr_frame():
-            self._update_mujoco()
-            self._update_views()
-            if self._xr_frame_state.should_render:
-                self._render()
-            self._end_xr_frame()
-    
-    def loop(self):
-        while not self._should_quit:
-            self.frame()
+        return self._start_xr_frame()
 
-if __name__ == "__main__":
-    with MujocoXRViewer(debug=True, mirror_window=True, samples=8) as mjxr:
-        mjxr.loop()
+    def render_frame(self):
+        self._update_mujoco()
+        self._update_views()
+        if self._xr_frame_state.should_render:
+            self._render()
+        self._end_xr_frame()
+
+    def should_exit(self) -> bool:
+        return self._should_quit

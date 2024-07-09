@@ -1,6 +1,6 @@
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 from enum import Enum
-from engine import Engine
+from interfaces import Engine
 import math
 
 class SceneException(Exception):

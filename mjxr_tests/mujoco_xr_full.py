@@ -118,7 +118,7 @@ class OpenXrExample(object):
         self.logger = logging.getLogger("gl_example")
         self.logger.setLevel(log_level)
         self.debug_callback = xr.PFN_xrDebugUtilsMessengerCallbackEXT(self.debug_callback_py)
-        self.mirror_window = True
+        self.mirror_window = False
         self.instance = None
         self.system_id = None
         self.pxrCreateDebugUtilsMessengerEXT = None
@@ -315,14 +315,14 @@ class OpenXrExample(object):
 
         # FBO
         self.sw_fbo = GL.glGenFramebuffers(1)
-        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.sw_fbo)
-        GL.glViewport(0, 0, w, h)
+        # GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.sw_fbo)
+        # GL.glViewport(0, 0, w, h)
 
         # COLOR
 
 
         # DEPTH
-        self.fbo_depth_tex = GL.glGenTextures(1)
+        """ self.fbo_depth_tex = GL.glGenTextures(1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.fbo_depth_tex)
         GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
         GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
@@ -338,11 +338,11 @@ class OpenXrExample(object):
             GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA8, *self.window_size, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, None)
             GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, self.tex_dowmsample, 0)
 
-        GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, 0)
+        GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, 0) """
 
     def prepare_mujoco(self):
         self.first = True
-        self._model = mujoco.MjModel.from_xml_path("assets/MuJoCo scene.xml")
+        self._model = mujoco.MjModel.from_xml_path("assets/balloons.xml")
         self._data = mujoco.MjData(self._model)
         self._scene = mujoco.MjvScene(self._model, 1000)
         self._context = mujoco.MjrContext(self._model, mujoco.mjtFontScale.mjFONTSCALE_100)
