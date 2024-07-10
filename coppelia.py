@@ -40,7 +40,7 @@ class CoppeliaConnector(Engine):
         self.sim.setStepping(True)
         self.sim.startSimulation()
     
-    def step_simulation(self):
+    def step_simulation(self, duration: int | None):
         self.sim.step()
     
     def stop_simulation(self):

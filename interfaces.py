@@ -17,7 +17,13 @@ class Engine:
         pass
     def start_simulation(self):
         pass
-    def step_simulation(self):
+    def step_simulation(self, duration: float | None):
+        """Steps the simulation for the amount of time specified.
+
+        Args:
+            duration (float | None): amount of seconds to simulate.
+            If None, then only step once.
+        """        
         pass
     def stop_simulation(self):
         pass
@@ -25,13 +31,15 @@ class Engine:
 class Visualizer:
     def start_visualization(self):
         pass
-    def start_frame(self) -> bool:
+    def start_frame(self) -> tuple[bool, float | None]:
         """Starts a render frame.
 
         Returns:
-            bool: True if the frame should continue, False otherwise.
-        """        
-        return True
+            tuple[bool, float | None]: a tuple containing True and the amount of
+            seconds this frame should durate (or None if unknown) IF the frame
+            should render, a tuple containing False and any other value otherwise.
+        """
+        return (True, None)
     def render_frame(self):
         pass
     def should_exit(self) -> bool:

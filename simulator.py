@@ -33,7 +33,7 @@ def simulation(engine: Engine,
 
         try:
             while not visualizer.should_exit():
-                frame_continue = visualizer.start_frame()
+                frame_continue, frame_duration = visualizer.start_frame()
                 if visualizer.should_exit():
                     break
                 if not frame_continue:
@@ -53,7 +53,7 @@ def simulation(engine: Engine,
                     if hand_pose is not None:
                         engine.move_hand(0, *hand_pose)
 
-                engine.step_simulation()
+                engine.step_simulation(frame_duration)
                 perf_bench.mark("Do simulation step")
 
                 visualizer.render_frame()
@@ -88,7 +88,7 @@ def simulation(engine: Engine,
         t = Thread(target=loop)
         t.start()
         # we must run the loop in another thread because the graph can only be visualized in the main thread...
-        #perf_bench.graph_viz(max_points=80, use_time=True)
+        #perf_bench.graph_viz(max_points=1000, use_time=True)
         #force_plot.graph_viz(max_points=10000, y_axis="Force")
         t.join()
     else:
@@ -122,7 +122,7 @@ if __name__ == "__main__":
             visualizer_ctx = nullcontext(MujocoSimpleVisualizer(mujoco))
         case "openxr":
             print("Loading Virtual Reality...")
-            visualizer_ctx = hand = MujocoXRVisualizer(mujoco)
+            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=True, samples=8)
         case _:
             raise RuntimeError("Invalid visualizer name")
 

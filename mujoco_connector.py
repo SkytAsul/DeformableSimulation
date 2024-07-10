@@ -43,8 +43,13 @@ class MujocoConnector(Engine):
         # data is an array containing only one number: the normal force
         return data[0] / 30
 
-    def step_simulation(self):
-        mj.mj_step(self.model, self.data)
+    def step_simulation(self, duration: float | None):
+        if duration is None:
+            mj.mj_step(self.model, self.data)
+        else:
+            step_count = int(duration // self.model.opt.timestep)
+            for _ in range(step_count):
+                mj.mj_step(self.model, self.data)
 
 class MujocoSimpleVisualizer(Visualizer):
     def __init__(self, mujoco : MujocoConnector):

@@ -28,6 +28,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._prepare_xr_rendering()
         self._prepare_xr_hand_tracking()
         self._prepare_mujoco()
+        glfw.make_context_current(None) # To let other threads use the context if needed
         return self
 
     def _init_xr(self):
@@ -329,7 +330,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         # We first ask to acquire a swapchain image to render onto
         image_index = xr.acquire_swapchain_image(self._xr_swapchain, xr.SwapchainImageAcquireInfo())
         xr.wait_swapchain_image(self._xr_swapchain, xr.SwapchainImageWaitInfo(timeout=xr.INFINITE_DURATION))
-        
+
         # Once we acquired it, we bind the image to our framebuffer object
         glfw.make_context_current(self._window)
         GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._xr_swapchain_fbo)
@@ -401,6 +402,12 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             pass # does not seem to work
         glfw.terminate()
 
+    def start_visualization(self):
+        glfw.make_context_current(self._window)
+
+    def stop_visualization(self):
+        glfw.make_context_current(None)
+
     def start_frame(self):
         glfw.poll_events()
         self._poll_xr_events()
@@ -408,9 +415,12 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             self._should_quit = True
 
         if self._should_quit:
-            return
+            return (False, None)
         
-        return self._start_xr_frame()
+        if not self._start_xr_frame():
+            return (False, None)
+        
+        return (True, self._xr_frame_state.predicted_display_period / 1000000000) 
 
     def render_frame(self):
         self._update_mujoco()

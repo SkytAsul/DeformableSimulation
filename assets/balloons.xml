@@ -1,9 +1,21 @@
+<?xml-model href="../../mujoco-xml-schema-mjcf/mujoco.xsd"?>
 <mujoco>
-    <option density="1.204" viscosity="1.8e-5" integrator="implicit"/>
+    <statistic extent="1.5" meansize=".05" />
+
+    <option density="1.204" viscosity="1.8e-5" timestep=".001" integrator="implicitfast"
+            solver="CG" tolerance="1e-6" jacobian="sparse" />
   
     <visual>
-      <global elevation="-10"/>
+      <rgba haze="0.15 0.25 0.35 1" fog="0.5 0.8 0.5 0.5"/>
+      <quality shadowsize="4096" />
+      <map stiffness="100" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3" />
     </visual>
+
+    <size memory="10M" />
+
+    <extension>
+        <plugin plugin="mujoco.elasticity.solid" />
+    </extension>
   
     <default>
       <tendon limited="true" width="0.003" rgba="1 1 1 1"/>
@@ -39,19 +51,36 @@
     </default>
   
     <asset>
-      <texture type="skybox" builtin="gradient" rgb1="1 0.5 0.7" rgb2="0 0 0" width="512"
+      <texture type="skybox" builtin="gradient" rgb1="0.529 0.808 0.922" rgb2="0 0 0" width="512"
           height="512" />
-      <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb2="0 0 0" rgb1="1 1 1"/>
-      <material name="grid" texture="grid" texrepeat="2 2" texuniform="true" reflectance=".6"/>
+      <texture name="grid" type="2d" builtin="checker" width="512" height="512"
+        rgb2="0.127 0.731 0.141 " rgb1="0.484 0.984 0.0" mark="edge"/>
+      <material name="grid" texture="grid" texrepeat="2 2" texuniform="true"
+        reflectance="0" rgba=".5 .5 .5 1"/>
     </asset>
   
     <worldbody>
-      <body name="finger" mocap="true" pos="10 0 0.1" euler="90 0 0">
+      <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
+        dir="0 0 -1" castshadow="false" />
+      <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
+
+      <flexcomp type="grid" count="6 6 6" spacing=".06 .06 .06" pos="0 1 -.25" dim="3"
+          radius=".005" rgba="0 .7 .7 1" mass="5" name="softbody">
+          <edge damping="1"/>
+          <!-- <pin gridrange="0 0 0 4 4 0"/> -->
+          <contact selfcollide="none" />
+          <plugin plugin="mujoco.elasticity.solid">
+              <config key="poisson" value="0" />
+              <config key="young" value="5e4" />
+          </plugin>
+      </flexcomp>
+
+      <body name="finger" mocap="true" pos="2 0 1" euler="90 0 0">
         <geom type="capsule" size="0.01115 0.036" />
-        <site name="fingertip" type="sphere" pos="0.0 -0.008 -0.035" rgba="0.5 0.5 1 1" />
       </body>
-      <body name="right_hand" mocap="true" pos="0 0 0.2" euler="0 0 0">
+      <body name="right_hand" mocap="true" pos="0 0 1" euler="0 0 0">
           <geom type="capsule" size="0.03 0.06" />
+        <site name="fingertip" type="sphere" pos="0.0 -0.03 -0.055" rgba="0.5 0.5 1 1" />
       </body>
 
       <geom name="ground" type="plane" size="5 5 .05" pos="0 0 -.5" material="grid"/>
@@ -59,8 +88,6 @@
   
       <body name="weight" childclass="weight" pos=".3 0 .2">
         <freejoint/>
-        <light pos="1 0 3" dir="-1 0 -3" mode="trackcom"/>
-        <light pos="-1 0 3" dir="1 0 -3" mode="trackcom"/>
         <!-- The mass of the weight was chosen to be slightly bigger than the total buoyancy of the balloons. -->
         <geom name="weight" type="box" size=".015 .015 .015" mass=".0347"/>
         <site name="weight1" pos=" .013  .013 .013" size="0.005"/>

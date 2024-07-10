@@ -14,6 +14,7 @@ class Plotter:
         self._iter_time = []
         self._labels = []
         self._iter_i = 0
+        self._iter_j = 0
         self._animation = None
     
     def new_iteration(self):
