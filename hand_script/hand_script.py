@@ -13,6 +13,25 @@ import logging
 
 import tyro
 
+# All our assets have unique names so we do not need the hash in the filename
+class UnhashedAsset(mjcf.Asset):
+    def __init__(self, contents, name, extension):
+        super().__init__(contents, extension)
+        self.name = name
+
+    def get_vfs_filename(self):
+        return self.name + self.extension
+
+def relative_pos(position: list[int], parent: Element):
+    if "pos" not in parent.get_attributes():
+        return position
+    
+    new_position = [ position[i] - parent.pos[i] for i in range(3) ]
+    if parent.parent is not None:
+        return relative_pos(new_position, parent.parent)
+    else:
+        return new_position
+    
 class HandCreator:
     def __init__(self, output: Path):
         self.output = output
@@ -76,57 +95,69 @@ class HandCreator:
         
         return mesh
 
-    def create_finger_part(self, name: str, part_id: int, parent: Element):
-        fullname = f"{name}_{part_id}"
-        logging.info(f"Creating finger part {fullname}...")
+    def create_hand_part(self, fullname: str, parent: Element):
+        logging.info(f"Creating hand part {fullname}...")
 
         geom = self.meshes.geometry.get(fullname)
         if geom is None:
-            raise RuntimeError("No geometry for finger", fullname)
-        
+            raise RuntimeError("No geometry for part", fullname)
+        geom: trimesh.Trimesh
+
         material = self.materials.get(fullname)
         if material is None:
-            raise RuntimeError("No material for finger", fullname)
+            raise RuntimeError("No material for part", fullname)
 
         # Recenter the geometry
         x,y,z  = [ [ v[i] for v in geom.vertices ] for i in range(3) ]
         center = [ (max(axis) + min(axis))/2 for axis in [x,y,z] ]
         geom.vertices -= center
 
-        mesh_file = self.output / (fullname + ".obj")
-        geom.export(mesh_file.as_posix(), include_texture=True, header=None)
-
+        # We do not need to export the geometry to a file: by just getting the text contents,
+        # we can pass them to MJCF via assets and it will take care of saving it.
+        mesh_contents = geom.export(None, "obj", include_texture=True, header=None)
 
         # TODO decomposition
-        self.model.asset.add("mesh", file=mesh_file.name)
+        visual_name = fullname + "-visual"
+        collision_name = fullname + "-collision"
+        self.model.asset.add("mesh", file=UnhashedAsset(mesh_contents, visual_name, ".obj"), name=visual_name)
         self.model.asset.add("material", name=material.name,
                     specular=material.mjcf_specular(),
                     shininess=material.mjcf_shininess(),
                     rgba=material.mjcf_rgba())
 
-        fingerbody = parent.add("body", name=fullname, pos=center)
-        fingerbody.add("geom", mesh=fullname, material=fullname)
+        partbody = parent.add("body", name=fullname, pos=relative_pos(center, parent))
+        partbody.add("geom", mesh=visual_name, name=visual_name, dclass="visual", material=material.name)
+        partbody.add("geom", mesh=visual_name, name=collision_name, dclass="collision")
 
-        return fingerbody
+        return partbody
 
     def create_finger(self, name: str, parent: Element, subparts: int):
         last_parent = parent
         for i in range(1, subparts+1):
-            last_parent = self.create_finger_part(name, i, last_parent)
+            last_parent = self.create_hand_part(f"{name}_{i}", last_parent)
 
-    def main(self, hand_model_path: Path):
+    def add_defaults(self, model: mjcf.RootElement):
+        visual = model.default.add("default", dclass="visual")
+        visual.geom.set_attributes(type="mesh", group=2, contype=0, conaffinity=0)
+
+        collision = model.default.add("default", dclass="collision")
+        collision.geom.set_attributes(type="mesh", group=3)
+
+    def main(self, hand_model_path: Path, overwrite = False):
         if self.output.exists():
-            res = input("Output already exists. Do you want to remove ? [Y/N]")
-            if res.lower() != "y":
+            if not overwrite and input("Output already exists. Do you want to remove ? [Y/N] ").lower() != "y":
                 return
             shutil.rmtree(self.output)
 
-        self.output.mkdir(parents=True)
+        # self.output.mkdir(parents=True)
+        # MJCF export takes care of that
 
         self.materials = self.load_materials(self.find_material_file(hand_model_path))
         self.meshes = self.load_meshes(hand_model_path)
 
         self.model = mjcf.RootElement(model="Hand")
+
+        self.add_defaults(self.model)
 
         hand_body = self.model.worldbody.add("body", name="hand")
         self.create_finger("thumb", hand_body, 2)
@@ -134,12 +165,13 @@ class HandCreator:
         self.create_finger("middle", hand_body, 3)
         self.create_finger("annular", hand_body, 3)
         self.create_finger("pinky", hand_body, 3)
+        self.create_hand_part("wrist", hand_body)
+        self.create_hand_part("palm", hand_body)
 
-        mjcf.export_with_assets(self.model, self.output, "Hand.xml")
+        mjcf.export_with_assets(self.model, self.output, "Hand.xml", precision=3)
 
-def generate_hand(hand_model: Path, output: Path):
-    HandCreator(output).main(hand_model)
+def generate_hand(hand_model: Path, output: Path, /, overwrite: bool = False):
+    HandCreator(output).main(hand_model, overwrite)
 
 if __name__ == "__main__":
-    # HandCreator(Path("./output/")).main(Path("Hand_Decomposed.obj"))
-    tyro.cli(tyro.conf.Positional[generate_hand])
+    tyro.cli(generate_hand)
