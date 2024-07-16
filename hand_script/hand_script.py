@@ -1,3 +1,14 @@
+"""
+A util similar to obj2mjcf to convert a 3D hand file to a MuJoCo MJCF file.
+
+Unlike obj2mjcf, this util recreates a hierarchy of bodies and constructs the convex
+hulls on each subpart of the hand, thus making the constructed XML file almost ready-to-use.
+
+I dropped it before the hand because the OBJ files do not contain the necessary data to position
+joints properly and set their axis. The "skeleton_loader" script was made to complete this one but
+failed, as you can read in its header.
+"""
+
 from obj2mjcf.material import Material
 from obj2mjcf import constants
 
@@ -53,7 +64,7 @@ class Options:
     """
     verbose: bool = True
     """Should informations be printed to the standard output."""
-    
+
 class HandCreator:
     def __init__(self, options: Options):
         self.options = options
@@ -130,6 +141,7 @@ class HandCreator:
             raise RuntimeError("No material for part", fullname)
 
         # Recenter the geometry
+        # WARNING: the center is arbitrary. Joints would have to be repositioned.
         x,y,z  = [ [ v[i] for v in geom.vertices ] for i in range(3) ]
         center = [ (max(axis) + min(axis))/2 for axis in [x,y,z] ]
         geom.vertices -= center
