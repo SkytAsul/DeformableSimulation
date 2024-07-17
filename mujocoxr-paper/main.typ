@@ -155,6 +155,92 @@ On line 114, we tell glfw to make the OpenGL context current in the current thre
 
 It is worth noting that we do not give any information on the OpenGL version and profile we want. This is because MuJoCo specifically requires the _Compatibility profile_ (see #link("https://mujoco.readthedocs.io/en/3.2.0/programming/index.html#using-opengl")[this MuJoCo page] and @ctx_obj).
 
+== OpenXR configuration <prepare_xr>
+_The related method is `_prepare_xr`._
+
+The first part of the method has nothing really worth noting: it first creates the `graphics_binding` object that must be passed to the OpenXR session and then it creates the actual session using some C/Python code.
+
+#show-code(showrange: (145, 155))
+
+At line 145 we create the swapchain for our stereo image, hence its width being `_width_render` (which is twice one eye's image width). The format has been selected arbitrarily, the best practice would be to enumerate the available formats and select the best one from here. The usage flags #footnote[https://registry.khronos.org/OpenXR/specs/1.1/man/html/XrSwapchainUsageFlagBits.html] contains:
+- `TRANSFER_DST` because the swapchain image will be the destination of a pixel transfer operation (seen later)
+- `COLOR_ATTACHMENT` because the swapchain image will have colored pixels on it (in most OpenXR applications this is the case)
+- `SAMPLED` because the image can be multisampled
+
+The line 155 is there to retrieve the list of images contained in the swapchain: we do it here once instead of doing it for each frame.
+
+#show-code(showrange: (157, 171))
+
+Here we create the projection layer for the swapchain. It is the object that instructs the runtime where to put the rendered image in the virtual user space. It is done in 3 parts:
++ The reference space for the projection is created with the default options (the `STAGE` space type #footnote[https://registry.khronos.org/OpenXR/specs/1.1/man/html/XrReferenceSpaceType.html] and default orientation and position).
++ One view per eye is created. Both views are attached to the same swapchain (the one we created earlier) but the `image_rect` of the right eye (which defines which part of the swapchain image is displayed) is offset to the right.
++ Finally, the whole projection layer is created.
+
+Finally at line 171, we create an empty OpenGL framebuffer for the swapchain. We will use it later.
+
+== MuJoCo preparation
+_The related method is `_prepare_mujoco`._
+
+#show-code(showrange: (177, 193))
+
+The lines 177 and 178 are basic MuJoCo initialization. This can be done somewhere else in the code, even far sooner.
+
+In this method, we mainly initialize the options of the MuJoCo scene and visualization objects so it can create its render context accordingly. This is done at line 190: when initializing the `MjrContext` object, it internally creates the offscreen framebuffer with the parameters we set at lines 184 to 186.
+
+At this point, everything is ready to start the main loop.
+
+== Frame loop - first part
+_The related methods are `loop`, `frame`, `_poll_xr_events` and `_start_xr_frame`._
+
+The main loop structure looks like this:
+#sourcecode(numbering: none)[```py
+loop:
+    poll_events
+    if should_quit:
+        stop
+    
+    if try_start_frame:
+        make_a_frame
+```]
+
+The `poll_events` part is made of this:
+#show-code(showrange: (363, 366))
+The `poll_events` method of glfw allows to know if the user wants to close the application on the desktop part (for instance, by closing the mirror window). We update the `_should_quit` field accordingly at line 366.\
+The `_poll_xr_events` method is fetching all events from the OpenXR instance and, if the event is a `SESSION_STATE_CHANGED` event, it does the following:
+#show-code(showrange: (237, 246))
+If this is not clear to you, see the Session lifecycle at @XR-session-lifecycle.
+
+If everything is fine and the visualization should not quit, we attempt to start the XR frame:
+#show-code(showrange: (209, 218))
+If the session is in the right state to render a frame, it waits for the frame to be ready (so we do not render faster than the device refresh rate) and _then_ it returns `True`.
+
+== Frame loop - second part
+_The related methods are `frame`, `_update_mujoco`, `_update_views`, `render`, `_end_xr_frame`._
+
+This only happens if the session is in the state to render a frame. This is how it goes:
+#show-code(showrange: (372, 376))
+
+The `_update_mujoco` method is really simple:
+#show-code(showrange: (199, 200))
+The line 199 could be done externally, it is not tied to the visualization: it only steps the physics. On the contrary, the call to `mjv_updateScene` at line 200 fetches geometries from the simulation data and stores it in the scene.
+
+The `_update_views` method is the one that takes care of the head tracking. It goes in 3 parts: first, it fetches the `view_states` which contains, for each eye, its position, orientation and field of view. Then, it updates the projection layer accordingly and the two cameras in the MuJoCo scene to follow the eyes. Finally, it tells MuJoCo that all coordinates should be transformed in a certain way (otherwise, the world is tilted to the right).
+
+The `_render` function is important and complex:
+#show-code(showrange: (287, 300))
+This first part prepares the framebuffer we created at the end of @prepare_xr by attaching the current swapchain image.\
+`glBindFramebuffer(GL_FRAMEBUFFER, fbo)` sets the framebuffer object as the one which will receive the read and draw operations.\
+`glFramebufferTexture2D` attaches the image as the first color attachement of the framebuffer object.
+
+#show-code(showrange: (303, 304))
+The _real_ rendering is done in the line 304. Afterwards, all is left is to copy the final image from MuJoCo's offscreen framebuffer to our own framebuffer, which has the swapchain image attached.
+
+#show-code(showrange: (306, 315))
+The first two instructions are to set which framebuffer will be read from and which one will be drawn on.\
+`glBlitFramebuffer` is an instruction to "copy" the pixels (the color ones in our case) from the read framebuffer to the draw one. Both framebuffers color attachements have the same size, so we put the same rectangle twice.
+
+The rest of the method is made to downsample the rendered image and then copy it to our mirror window (if needed).
+
 == Note on the `ContextObject` provided by _pyopenxr_ <ctx_obj>
 The _pyopenxr_ bindings provide a pre-made class to handle most of the instance, session and swapchain work and let us focus on the interesting parts. This class is named `ContextObject`. However, it is not suitable for use in our case for two reasons:
 - `ContextObject` creates one swapchain per eye, whereas we want one big swapchain containing both eyes (because this is how we want MuJoCo to render).
