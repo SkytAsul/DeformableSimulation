@@ -272,13 +272,15 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
                         ctypes.byref(event_buffer),
                         ctypes.POINTER(xr.EventDataSessionStateChanged)).contents
                     self._xr_session_state = xr.SessionState(event.state)
+                    # see https://registry.khronos.org/OpenXR/specs/1.0/html/xrspec.html#session-lifecycle
                     match self._xr_session_state:
                         case xr.SessionState.READY:
                             if not self._should_quit:
                                 xr.begin_session(self._xr_session, xr.SessionBeginInfo(xr.ViewConfigurationType.PRIMARY_STEREO))
                         case xr.SessionState.STOPPING:
+                            # means the session should end BUT it can start again later,
+                            # this happens for instance when the user removes the headset
                             xr.end_session(self._xr_session)
-                            self._should_quit = True
                         case xr.SessionState.EXITING | xr.SessionState.LOSS_PENDING:
                             self._should_quit = True
             except xr.EventUnavailable:

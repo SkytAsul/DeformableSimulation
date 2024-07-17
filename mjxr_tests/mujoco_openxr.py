@@ -155,10 +155,8 @@ class MujocoXRViewer:
         self._xr_swapchain_images = xr.enumerate_swapchain_images(self._xr_swapchain, xr.SwapchainImageOpenGLKHR)
 
         self._xr_projection_layer = xr.CompositionLayerProjection(
-            space=xr.create_reference_space(self._xr_session, xr.ReferenceSpaceCreateInfo(
-                reference_space_type=xr.ReferenceSpaceType.STAGE,
-                pose_in_reference_space=xr.Posef(xr.Quaternionf(), xr.Vector3f())
-            )),
+            # Default space params are okay: identity quaternion and zero vector. Let's use them.
+            space=xr.create_reference_space(self._xr_session, xr.ReferenceSpaceCreateInfo()),
             views = [xr.CompositionLayerProjectionView(
                 sub_image=xr.SwapchainSubImage(
                     swapchain=self._xr_swapchain,
@@ -241,8 +239,9 @@ class MujocoXRViewer:
                             if not self._should_quit:
                                 xr.begin_session(self._xr_session, xr.SessionBeginInfo(xr.ViewConfigurationType.PRIMARY_STEREO))
                         case xr.SessionState.STOPPING:
+                            # means the session should end BUT it can start again later,
+                            # this happens for instance when the user removes the headset
                             xr.end_session(self._xr_session)
-                            self._should_quit = True
                         case xr.SessionState.EXITING | xr.SessionState.LOSS_PENDING:
                             self._should_quit = True
             except xr.EventUnavailable:

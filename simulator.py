@@ -138,7 +138,7 @@ if __name__ == "__main__":
         with weart_ctx as weart:
             
             if use_weart:
-                print("Connected. Calibrating...")
+                print("Connected. Calibrating, stand still...")
 
                 weart.calibrate()
                 print("Calibrated.\n")
