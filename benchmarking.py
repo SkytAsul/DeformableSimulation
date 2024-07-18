@@ -5,7 +5,7 @@ from matplotlib.animation import FuncAnimation
 
 class Plotter:
     def __init__(self, title = "Real-time plot"):
-        self._title = title
+        self.title = title
         self.start()
 
     def start(self):
@@ -42,6 +42,11 @@ class Plotter:
         if self._animation != None:
             self._animation.pause()
 
+    def get_data(self, from_date: datetime = None) -> dict[list[float]]:
+        data = self._plot_data
+        if from_date is not None:
+            
+
     def export_csv(self, path, include_iter = False, include_time = False):
         with open(path, 'w', newline='') as f:
             writer = csv.writer(f)
@@ -73,7 +78,7 @@ class Plotter:
         WARNING: This method must be called in the main thread.
         """
         figure, ax = pyplot.subplots()
-        figure.canvas.manager.set_window_title(self._title)
+        figure.canvas.manager.set_window_title(self.title)
         ax.set_xlabel('Time' if use_time else 'Iteration')
         ax.set_ylabel(y_axis)
 

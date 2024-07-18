@@ -4,23 +4,33 @@ import glfw
 import platform
 import ctypes
 import numpy
+import time
 from OpenGL import GL
 from typing import Optional
 
 from interfaces import Visualizer, HandPoseProvider
 from mujoco_connector import MujocoConnector
 
+from benchmarking import Benchmarker
+
 APP_NAME = "Deformable Simulation"
 FRUSTUM_NEAR = 0.05
 FRUSTUM_FAR = 50
 
 class MujocoXRVisualizer(Visualizer, HandPoseProvider):
-    def __init__(self, mj: MujocoConnector, mirror_window = False, debug = False, samples: Optional[int] = None):
+    def __init__(self, mj: MujocoConnector, mirror_window = False, debug = False, samples: Optional[int] = None, fps_counter = False):
         self._mj_connector = mj
         self._mirror_window = mirror_window
         self._debug = debug
         self._samples = samples
         self._should_quit = False
+
+        if fps_counter:
+            self._fps_bench = Benchmarker("FPS counter")
+            self._benchmarkers = [self._fps_bench]
+        else:
+            self._fps_bench = None
+            self._benchmarkers = []
     
     def __enter__(self):
         self._init_xr()
@@ -318,6 +328,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._mj_scene.enabletransform = True
         self._mj_scene.rotate[0] = numpy.cos(0.25 * numpy.pi)
         self._mj_scene.rotate[1] = numpy.sin(-0.25 * numpy.pi)
+        self._mj_scene.translate[1] = 1
 
     def _fetch_actions(self):
         xr.sync_actions(self._xr_session, xr.ActionsSyncInfo(active_action_sets = ctypes.pointer(xr.ActiveActionSet(
@@ -347,6 +358,9 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         # We ask MuJoCo to render on its own offscreen framebuffer
         mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN, self._mj_context)
         mujoco.mjr_render(mujoco.MjrRect(0, 0, self._width_render, self._height), self._mj_scene, self._mj_context)
+
+        if self._benchmarkers:
+            self._render_benchmarkers()
 
         # We copy what MuJoCo rendered on our framebuffer object
         GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self._mj_context.offFBO)
@@ -387,6 +401,10 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             )
         xr.release_swapchain_image(self._xr_swapchain, xr.SwapchainImageReleaseInfo())
     
+    def _render_benchmarkers(self):
+        for bench in  self._benchmarkers:
+            pass
+
     def __exit__(self, exc_type, exc_value, traceback):
         if self._window is not None:
             glfw.make_context_current(self._window)
@@ -449,6 +467,9 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             return hand_pos, hand_rot
         else:
             return None
+        
+    def add_perf_counters(self, *benchmarkers: Benchmarker):
+        self._benchmarkers += benchmarkers
 
 @staticmethod
 def quat_xr2mj(xr_quat):

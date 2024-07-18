@@ -30,6 +30,8 @@ def simulation(engine: Engine,
 
     def loop():
         visualizer.start_visualization()
+        if isinstance(visualizer, MujocoXRVisualizer):
+            visualizer.add_perf_counters(perf_bench)
 
         try:
             while not visualizer.should_exit():

@@ -24,7 +24,7 @@ class MujocoConnector(Engine):
         self._finger_axis_point = finger.pos.copy()
         self._finger_axis_point[1] -= finger_geom.size[1]
 
-        self._right_hand_id = self.model.body("right_hand").mocapid[0]
+        self._right_hand_id = self.model.body("right_hand_mocap").mocapid[0]
 
     def move_finger(self, angle : float):
         rot = np.array([.0, .0, .0, .0])
