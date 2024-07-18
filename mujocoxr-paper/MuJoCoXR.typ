@@ -241,6 +241,42 @@ The first two instructions are to set which framebuffer will be read from and wh
 
 The rest of the method is made to downsample the rendered image and then copy it to our mirror window (if needed).
 
+#pagebreak()
+= Enhancements
+== Real-time simulation
+For now, the code does 1 simulation step per render frame. However, due to synchronization made by OpenXR, one frame cannot be _shorter_ than what it is supposed to be, so the framerate does not exceed the refresh rate of the device (for instance, 80Hz for the Oculus Rift S). This means that the simulation will update 80 times per second, no more. If the timestep set in the MuJoCo is not set to 1/80 of a second, the simulation will not be in "real-time".
+
+To fix that, there are two options:
+- The easy one is to change the timestep of your MuJoCo model to match the refresh rate. For the Oculus Rift S, you would set the timestep to $1 slash 80 = 0.0125 s$. This however is not ideal because some simulations will not be stable at such a large timestep.
+- The harder one is to change the code to do, for each frame, the amount of simulation steps needed to advance the same amount of time the frame should durate. For a frame duration of $Delta t_"frame" = 1 slash f$ and a timestep of $Delta t_"sim"$, you would advance for $ n_"steps" = floor((Delta t_"frame") / (Delta t_"sim")) $
+  You can get the frame duration using `_xr_frame_state.predicted_display_period` (in nanoseconds).
+
+== Hand tracking
+Hand tracking is not included in the demo file, because it is tied in how the hand is represented in the MJCF. However, here are the basic steps to implement it:
+- In the MuJoCo model, add a mocap body that will receive the hand position.
+- For OpenXR, we have to create an _action_ that will receive data from the controller. To do that, in the Python program after the `_prepare_xr` step, add another step which follow the same steps as in #link("https://github.com/cmbruns/pyopenxr_examples/blob/9c678b89cf5821730b88a7f3f8145572d536e119/xr_examples/track_controller.py#L20-L89")[this example].
+- To get the position and orientation in each frame, use thie code:
+#sourcecode[```py
+xr.sync_actions(self._xr_session, xr.ActionsSyncInfo(active_action_sets = ctypes.pointer(xr.ActiveActionSet(
+    action_set=self._action_set,
+    subaction_path=xr.NULL_PATH # wildcard to get all actions
+))))
+space_location = xr.locate_space(
+    space=self._action_space,
+    base_space=self._xr_projection_layer.space,
+    time=self._xr_frame_state.predicted_display_time
+)
+if (space_location.location_flags & xr.SPACE_LOCATION_POSITION_VALID_BIT
+    and space_location.location_flags & xr.SPACE_LOCATION_ORIENTATION_VALID_BIT):
+    
+    hand_pos = numpy.zeros(3)
+    hand_rot = numpy.zeros(4)
+    orientation = [space_location.pose.orientation[3], *space_location.pose.orientation[3]]
+    mujoco.mjv_room2model(hand_pos, hand_rot, list(space_location.pose.position), orientation, self._mj_scene)
+    return hand_pos, hand_rot
+```]
+The important part here is to remember to change the quaternion format to the MuJoCo one $(w, x, y, z)$ and to call `mjv_room2model` to automatically apply the transformations defined in `_update_views` to the pose.
+
 == Note on the `ContextObject` provided by _pyopenxr_ <ctx_obj>
 The _pyopenxr_ bindings provide a pre-made class to handle most of the instance, session and swapchain work and let us focus on the interesting parts. This class is named `ContextObject`. However, it is not suitable for use in our case for two reasons:
 - `ContextObject` creates one swapchain per eye, whereas we want one big swapchain containing both eyes (because this is how we want MuJoCo to render).
@@ -248,6 +284,7 @@ The _pyopenxr_ bindings provide a pre-made class to handle most of the instance,
 - `ContextObject` uses an internal `OpenGLGraphics` class that handles a lot of rendering-related code. However, this class initializes the OpenGL context with the version 4.5 and _Core profile_. As we saw earlier, MuJoCo requires the _Compatibility profile_.
   - This is not bypassable without recompiling all of _pyopenxr_.
 For those reasons, we made every OpenXR-related code from the ground up.
+
 
 #pagebreak()
 = Annex - Source Code <source_code>
