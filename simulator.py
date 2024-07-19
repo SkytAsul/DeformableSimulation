@@ -37,8 +37,8 @@ def simulation(engine: Engine,
         try:
             while not visualizer.should_exit():
                 frame_bench.new_iteration()
-                frame_continue, frame_duration = visualizer.start_frame()
-                frame_bench.mark("Start frame")
+                frame_continue, frame_duration = visualizer.wait_frame()
+                frame_bench.mark("Wait frame")
                 frame_bench.end_iteration()
                 if visualizer.should_exit():
                     break
@@ -76,11 +76,11 @@ def simulation(engine: Engine,
                 force_plot.end_iteration()
                 perf_bench.end_iteration()
         except KeyboardInterrupt:
-            pass
+            pass # to exit gracefully
         finally:
             force_plot.stop()
             perf_bench.stop()
-            perf_bench.export_csv("benchmark.csv", include_time=True)
+            #perf_bench.export_csv("benchmark.csv", include_time=True)
 
             if visualizer is not None:
                 print("Stopping visualization...")
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     used_engine = "mujoco"
     used_viz = "openxr"
     use_weart = False
-    # scene_path = "assets/MuJoCo scene.xml"
+    #scene_path = "assets/MuJoCo scene.xml"
     scene_path = "assets/balloons.xml"
 
     print("Starting script...\n")
@@ -128,7 +128,7 @@ if __name__ == "__main__":
             visualizer_ctx = nullcontext(MujocoSimpleVisualizer(mujoco))
         case "openxr":
             print("Loading Virtual Reality...")
-            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=False, samples=8, fps_counter=False)
+            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=False, samples=8, fps_counter=True)
         case _:
             raise RuntimeError("Invalid visualizer name")
 

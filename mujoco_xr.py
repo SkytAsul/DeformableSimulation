@@ -5,6 +5,7 @@ import platform
 import ctypes
 import numpy
 import time
+import threading
 from OpenGL import GL
 from typing import Optional
 
@@ -17,6 +18,8 @@ from datetime import datetime, timedelta
 APP_NAME = "Deformable Simulation"
 FRUSTUM_NEAR = 0.05
 FRUSTUM_FAR = 50
+BENCH_PER_FRAME = True
+BENCH_USE_PREDICTED_FPS = True
 BENCH_TIMEDELTA = timedelta(seconds=2)
 
 class MujocoXRVisualizer(Visualizer, HandPoseProvider):
@@ -26,6 +29,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._debug = debug
         self._samples = samples
         self._should_quit = False
+        self._wait_i = 0
 
         if fps_counter:
             self._fps_bench = Benchmarker("FPS counter")
@@ -111,6 +115,44 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         graphics_result = xr.exception.check_result(xr.Result(graphics_result))
         if graphics_result.is_exception():
             raise graphics_result
+        
+        # prepare timing functions
+        self._xrConvertTimeToWin32PerformanceCounterKHR = ctypes.cast(
+            xr.get_instance_proc_addr(
+                self._xr_instance,
+                "xrConvertTimeToWin32PerformanceCounterKHR",
+            ),
+            xr.PFN_xrConvertTimeToWin32PerformanceCounterKHR
+        )
+        self._xrConvertWin32PerformanceCounterToTimeKHR = ctypes.cast(
+            xr.get_instance_proc_addr(
+                self._xr_instance,
+                "xrConvertWin32PerformanceCounterToTimeKHR",
+            ),
+            xr.PFN_xrConvertWin32PerformanceCounterToTimeKHR
+        )
+
+    def xrConvertTimeToWin32PerformanceCounterKHR(self, time: xr.Time) -> int:
+        perf_time = ctypes.c_longlong()
+        result = xr.check_result(self._xrConvertTimeToWin32PerformanceCounterKHR(
+            self._xr_instance,
+            time,
+            ctypes.byref(perf_time),
+        ))
+        if result.is_exception():
+            raise result
+        return perf_time.value
+
+    def xrConvertWin32PerformanceCounterToTimeKHR(self, perf_time: int) -> xr.Time:
+        time = xr.Time()
+        result = xr.check_result(self._xrConvertWin32PerformanceCounterToTimeKHR(
+            self._xr_instance,
+            ctypes.c_longlong(perf_time),
+            ctypes.byref(time),
+        ))
+        if result.is_exception():
+            raise result
+        return time
 
     def _init_window(self):
         """
@@ -246,7 +288,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         # The simulation is being stepped outside
         mujoco.mjv_updateScene(self._mj_model, self._mj_data, self._mj_option, None, self._mj_camera, mujoco.mjtCatBit.mjCAT_ALL, self._mj_scene)
 
-    def _start_xr_frame(self):
+    def _wait_xr_frame(self):
         """
         Starts a frame in the OpenXR environment.
 
@@ -263,11 +305,23 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
                 self._fetch_actions()
             
             self._xr_frame_state = xr.wait_frame(self._xr_session, xr.FrameWaitInfo())
-            xr.begin_frame(self._xr_session, None)
+            self._wait_i += 1
+            print("Started frame", self._wait_i)
             return True
         return False
 
     def _end_xr_frame(self):
+        estXT = self._xr_frame_state.predicted_display_time
+        estPC = self.xrConvertTimeToWin32PerformanceCounterKHR(estXT)
+        curPC = time.perf_counter_ns()
+        curXT = self.xrConvertWin32PerformanceCounterToTimeKHR(curPC).value // 100
+        diffXT = (estXT - curXT) / 1.e9
+        diffPC = (estPC * 100 - curPC) / 1.e9
+        # print(f"XT {diffXT} | PC {diffPC}")
+        # self._fps_bench.plot(diffPC, "Left")
+
+        # time.sleep(1 / 80. / 4) # wait 1/4 of a frame
+
         xr.end_frame(self._xr_session, xr.FrameEndInfo(
             self._xr_frame_state.predicted_display_time,
             xr.EnvironmentBlendMode.OPAQUE,
@@ -345,9 +399,9 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         # We first ask to acquire a swapchain image to render onto
         image_index = xr.acquire_swapchain_image(self._xr_swapchain, xr.SwapchainImageAcquireInfo())
         xr.wait_swapchain_image(self._xr_swapchain, xr.SwapchainImageWaitInfo(timeout=xr.INFINITE_DURATION))
-        if self._fps_bench:
-            self._fps_bench.mark("Acq. swapchain")
 
+        if self._fps_bench:
+            self._fps_bench.begin_mark()
         # Once we acquired it, we bind the image to our framebuffer object
         glfw.make_context_current(self._window)
         GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._xr_swapchain_fbo)
@@ -416,20 +470,29 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
     
     def _render_benchmarkers(self):
         string = ""
+
+        now = datetime.now()
+        from_date = now - BENCH_TIMEDELTA
+        
         for bench in self._benchmarkers:
             bench_string = f"{bench.title} | "
             if len(string) != 0:
                 bench_string = "\n" + bench_string
 
-            now = datetime.now()
-            data, time = bench.get_data(from_date=now - BENCH_TIMEDELTA)
+            data, time = bench.get_data(from_date)
             data_time = (now - time).total_seconds()
 
             for i, (label, data_row) in enumerate(data.items()):
                 if i != 0:
                     bench_string += ", "
-                mean_data = numpy.sum(data_row) / data_time
-                bench_string += f"{label}: {mean_data:.3f}"
+
+                if BENCH_PER_FRAME and label != "FPS":
+                    average_frame_duration = self._xr_frame_state.predicted_display_period / 1000000000 if BENCH_USE_PREDICTED_FPS else data_time / len(data_row)
+                    mean_data = numpy.sum(data_row) / average_frame_duration
+                    bench_string += f"{label}: {mean_data:.3f}%"
+                else:
+                    mean_data = numpy.sum(data_row) / data_time
+                    bench_string += f"{label}: {mean_data:.3f}/s"
                 
             string += bench_string
 
@@ -455,27 +518,20 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             pass # does not seem to work
         glfw.terminate()
 
-    def start_visualization(self):
+    def _render_loop(self):
         glfw.make_context_current(self._window)
 
-    def stop_visualization(self):
+        while self._render_running and not self._should_quit:
+            sema_res = self._render_semaphore.acquire(timeout=1)
+            if self._should_quit or not self._render_running:
+                break
+            
+            if sema_res:
+                self._render_frame(self._render_i)
+            
         glfw.make_context_current(None)
 
-    def start_frame(self):
-        glfw.poll_events()
-        self._poll_xr_events()
-        if glfw.window_should_close(self._window):
-            self._should_quit = True
-
-        if self._should_quit:
-            return (False, None)
-        
-        if not self._start_xr_frame():
-            return (False, None)
-        
-        return (True, self._xr_frame_state.predicted_display_period / 1000000000) 
-
-    def render_frame(self):
+    def _render_frame(self, index):
         if self._fps_bench:
             self._fps_bench.new_iteration()
         
@@ -486,10 +542,11 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._update_views()
         if self._fps_bench:
             self._fps_bench.mark("Views update")
+        
+        xr.begin_frame(self._xr_session, None)
         if self._xr_frame_state.should_render:
             self._render()
         elif self._fps_bench:
-            self._fps_bench.plot(0, "Acq. swapchain")
             self._fps_bench.plot(0, "Pure rendering")
             self._fps_bench.plot(0, "FPS")
 
@@ -497,6 +554,34 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
 
         if self._fps_bench:
             self._fps_bench.end_iteration()
+
+    def start_visualization(self):
+        self._render_running = True
+        self._render_semaphore = threading.Semaphore(0)
+        self._render_thread = threading.Thread(target=self._render_loop, name="OpenXR rendering")
+        self._render_thread.start()
+
+    def stop_visualization(self):
+        self._render_running = False
+        self._render_thread.join()
+
+    def wait_frame(self):
+        glfw.poll_events()
+        self._poll_xr_events()
+        if glfw.window_should_close(self._window):
+            self._should_quit = True
+
+        if self._should_quit:
+            return (False, None)
+        
+        if not self._wait_xr_frame():
+            return (False, None)
+        
+        return (True, self._xr_frame_state.predicted_display_period / 1000000000)
+
+    def render_frame(self):
+        self._render_i = self._wait_i
+        self._render_semaphore.release()
 
     def should_exit(self):
         return self._should_quit

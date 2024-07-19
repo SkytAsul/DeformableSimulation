@@ -44,17 +44,23 @@ class Plotter:
         if self._animation != None:
             self._animation.pause()
 
-    def get_data(self, from_date: datetime = None) -> tuple[dict[list[float]], datetime]:
+    def get_data(self, from_date: datetime = None, from_index: int | None = None, only_columns: list[str] | None = None) -> tuple[dict[list[float]], datetime]:
+        if from_date is not None and from_index is not None:
+            raise ValueError("Cannot have both from_date and from_index")
+
         data = self._plot_data
         time = self._iter_time[0]
         if from_date is not None:
             from_index = bisect.bisect(self._iter_time, from_date)
-            data = [row[from_index:] for row in data]
+        
+        if from_index is not None:
+            data = [col[from_index:] for col in data]
             time = self._iter_time[from_index]
         
         labelled_data = {}
         for i, label in enumerate(self._labels):
-            labelled_data[label] = data[i]
+            if not only_columns or label in only_columns:
+                labelled_data[label] = data[i]
         return labelled_data, time
 
     def export_csv(self, path, include_iter = False, include_time = False):

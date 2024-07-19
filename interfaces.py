@@ -31,7 +31,7 @@ class Engine:
 class Visualizer:
     def start_visualization(self):
         pass
-    def start_frame(self) -> tuple[bool, float | None]:
+    def wait_frame(self) -> tuple[bool, float | None]:
         """Starts a render frame.
 
         Returns:
