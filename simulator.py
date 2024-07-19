@@ -26,16 +26,20 @@ def simulation(engine: Engine,
         weart.start_listeners()
 
     perf_bench = Benchmarker(title="Performance profiler")
+    frame_bench = Benchmarker(title="Performance profiler")
     force_plot = Plotter(title="Applied force graph")
 
     def loop():
         visualizer.start_visualization()
         if isinstance(visualizer, MujocoXRVisualizer):
-            visualizer.add_perf_counters(perf_bench)
+            visualizer.add_perf_counters(perf_bench, frame_bench)
 
         try:
             while not visualizer.should_exit():
+                frame_bench.new_iteration()
                 frame_continue, frame_duration = visualizer.start_frame()
+                frame_bench.mark("Start frame")
+                frame_bench.end_iteration()
                 if visualizer.should_exit():
                     break
                 if not frame_continue:
@@ -56,18 +60,18 @@ def simulation(engine: Engine,
                         engine.move_hand(0, *hand_pose)
 
                 engine.step_simulation(frame_duration)
-                perf_bench.mark("Do simulation step")
+                perf_bench.mark("Step simulation")
 
                 visualizer.render_frame()
                 perf_bench.mark("Render")
 
                 force = engine.get_contact_force()
-                perf_bench.mark("Get contact force")
+                # perf_bench.mark("Contact force")
+                force_plot.plot(force, "Force")
 
                 if weart is not None:
                     weart.apply_force(force)
                     perf_bench.mark("Apply force to finger")
-                    force_plot.plot(force, "Force applied")
 
                 force_plot.end_iteration()
                 perf_bench.end_iteration()
@@ -76,7 +80,7 @@ def simulation(engine: Engine,
         finally:
             force_plot.stop()
             perf_bench.stop()
-            #perf_bench.export_csv("benchmark.csv", include_time=True)
+            perf_bench.export_csv("benchmark.csv", include_time=True)
 
             if visualizer is not None:
                 print("Stopping visualization...")
@@ -124,7 +128,7 @@ if __name__ == "__main__":
             visualizer_ctx = nullcontext(MujocoSimpleVisualizer(mujoco))
         case "openxr":
             print("Loading Virtual Reality...")
-            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=True, samples=8)
+            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=False, samples=8, fps_counter=False)
         case _:
             raise RuntimeError("Invalid visualizer name")
 

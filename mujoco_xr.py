@@ -12,10 +12,12 @@ from interfaces import Visualizer, HandPoseProvider
 from mujoco_connector import MujocoConnector
 
 from benchmarking import Benchmarker
+from datetime import datetime, timedelta
 
 APP_NAME = "Deformable Simulation"
 FRUSTUM_NEAR = 0.05
 FRUSTUM_FAR = 50
+BENCH_TIMEDELTA = timedelta(seconds=2)
 
 class MujocoXRVisualizer(Visualizer, HandPoseProvider):
     def __init__(self, mj: MujocoConnector, mirror_window = False, debug = False, samples: Optional[int] = None, fps_counter = False):
@@ -30,7 +32,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             self._benchmarkers = [self._fps_bench]
         else:
             self._fps_bench = None
-            self._benchmarkers = []
+            self._benchmarkers = None
     
     def __enter__(self):
         self._init_xr()
@@ -343,6 +345,8 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         # We first ask to acquire a swapchain image to render onto
         image_index = xr.acquire_swapchain_image(self._xr_swapchain, xr.SwapchainImageAcquireInfo())
         xr.wait_swapchain_image(self._xr_swapchain, xr.SwapchainImageWaitInfo(timeout=xr.INFINITE_DURATION))
+        if self._fps_bench:
+            self._fps_bench.mark("Acq. swapchain")
 
         # Once we acquired it, we bind the image to our framebuffer object
         glfw.make_context_current(self._window)
@@ -359,6 +363,8 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN, self._mj_context)
         mujoco.mjr_render(mujoco.MjrRect(0, 0, self._width_render, self._height), self._mj_scene, self._mj_context)
 
+        # We should display the benchmarks OUTSIDE the timed rendering, but doing so fucks up the bound buffers
+        # and the counters will not be blit to the mirror window
         if self._benchmarkers:
             self._render_benchmarkers()
 
@@ -399,11 +405,38 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
                 GL.GL_COLOR_BUFFER_BIT,
                 0x90BA # EXT_framebuffer_multisample_blit_scaled, SCALED_RESOLVE_FASTEST_EXT
             )
+        
+        if self._fps_bench:
+            self._fps_bench.mark("Pure rendering")
+
         xr.release_swapchain_image(self._xr_swapchain, xr.SwapchainImageReleaseInfo())
+
+        if self._fps_bench:
+            self._fps_bench.plot(1, "FPS")
     
     def _render_benchmarkers(self):
-        for bench in  self._benchmarkers:
-            pass
+        string = ""
+        for bench in self._benchmarkers:
+            bench_string = f"{bench.title} | "
+            if len(string) != 0:
+                bench_string = "\n" + bench_string
+
+            now = datetime.now()
+            data, time = bench.get_data(from_date=now - BENCH_TIMEDELTA)
+            data_time = (now - time).total_seconds()
+
+            for i, (label, data_row) in enumerate(data.items()):
+                if i != 0:
+                    bench_string += ", "
+                mean_data = numpy.sum(data_row) / data_time
+                bench_string += f"{label}: {mean_data:.3f}"
+                
+            string += bench_string
+
+        # It would be better to use a composition layer, but then we should implement characters writing ourselves
+        # which is a gigantic mess. It's better to let MuJoCo take care of that.
+        mujoco.mjr_overlay(mujoco.mjtFont.mjFONT_BIG, mujoco.mjtGridPos.mjGRID_TOP,
+                            mujoco.MjrRect(0, 0, self._width, self._height // 2), string, '', self._mj_context)
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self._window is not None:
@@ -443,11 +476,27 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         return (True, self._xr_frame_state.predicted_display_period / 1000000000) 
 
     def render_frame(self):
-        self._update_mujoco()
+        if self._fps_bench:
+            self._fps_bench.new_iteration()
+        
+        self._update_mujoco() # almost instantaneous
+
+        if self._fps_bench:
+            self._fps_bench.begin_mark()
         self._update_views()
+        if self._fps_bench:
+            self._fps_bench.mark("Views update")
         if self._xr_frame_state.should_render:
             self._render()
+        elif self._fps_bench:
+            self._fps_bench.plot(0, "Acq. swapchain")
+            self._fps_bench.plot(0, "Pure rendering")
+            self._fps_bench.plot(0, "FPS")
+
         self._end_xr_frame()
+
+        if self._fps_bench:
+            self._fps_bench.end_iteration()
 
     def should_exit(self):
         return self._should_quit
@@ -469,7 +518,8 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             return None
         
     def add_perf_counters(self, *benchmarkers: Benchmarker):
-        self._benchmarkers += benchmarkers
+        if self._benchmarkers is not None:
+            self._benchmarkers += benchmarkers
 
 @staticmethod
 def quat_xr2mj(xr_quat):

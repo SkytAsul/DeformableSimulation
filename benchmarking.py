@@ -1,4 +1,6 @@
-import time, datetime
+import time
+from datetime import datetime
+import bisect
 import csv
 from matplotlib import pyplot
 from matplotlib.animation import FuncAnimation
@@ -19,7 +21,7 @@ class Plotter:
     
     def new_iteration(self):
         self._iter_data = [] if self._iter_i == 0 else [0] * len(self._labels)
-        self._iter_time.append(datetime.datetime.now())
+        self._iter_time.append(datetime.now())
         self._iter_j = 0
 
     def plot(self, value, label):
@@ -42,10 +44,18 @@ class Plotter:
         if self._animation != None:
             self._animation.pause()
 
-    def get_data(self, from_date: datetime = None) -> dict[list[float]]:
+    def get_data(self, from_date: datetime = None) -> tuple[dict[list[float]], datetime]:
         data = self._plot_data
+        time = self._iter_time[0]
         if from_date is not None:
-            
+            from_index = bisect.bisect(self._iter_time, from_date)
+            data = [row[from_index:] for row in data]
+            time = self._iter_time[from_index]
+        
+        labelled_data = {}
+        for i, label in enumerate(self._labels):
+            labelled_data[label] = data[i]
+        return labelled_data, time
 
     def export_csv(self, path, include_iter = False, include_time = False):
         with open(path, 'w', newline='') as f:
@@ -94,7 +104,7 @@ class Plotter:
 
             for i in range(0, len(self._plot_data)):
                 if i >= len(lines):
-                    line, = pyplot.plot([datetime.datetime.now() if use_time else 0], [1], label = self._labels[i])
+                    line, = pyplot.plot([datetime.now() if use_time else 0], [1], label = self._labels[i])
                     lines.append(line)
                     changed_lines = True
                 
@@ -121,11 +131,14 @@ class Benchmarker(Plotter):
 
     def new_iteration(self):
         super().new_iteration()
-        self._time = time.perf_counter()
+        self.begin_mark()
 
     def mark(self, label):
         duration = time.perf_counter() - self._time
         super().plot(duration, label)
+        self.begin_mark()
+
+    def begin_mark(self):
         self._time = time.perf_counter()
     
     def graph_viz(self, max_points = -1, use_time = False, y_axis = "Time taken (s)"):

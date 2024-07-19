@@ -166,3 +166,4 @@ cython_debug/
 
 # Specific
 /hand_script/output
+benchmark.csv
