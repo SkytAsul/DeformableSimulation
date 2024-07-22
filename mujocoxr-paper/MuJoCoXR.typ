@@ -68,7 +68,7 @@ In this project, we will make use of only one "stereo" swapchain, which will con
 
 In order to create an OpenXR-compatible application, a precise suite of operations must be followed (see @XR-app-lifecycle for details):
 
-#figure(image("xr-instance-lifecycle.jpg", width: 110%), caption: [Lifecycle of an OpenXR application\
+#figure(image("xr-instance-lifecycle.jpg", width: 110%), caption: [Lifecycle of an OpenXR application #footnote[Extract of the #link("https://www.khronos.org/files/openxr-10-reference-guide.pdf")[OpenXR Reference Guide]] <xr-ref-guide>\
 #text(size: 0.9em)[_Not all functions are necessarily used._]], placement: auto) <XR-app-lifecycle>
 
 + Available extensions are fetched to see if the ones needed are present (for instance, the extension that tells OpenXR to use the OpenGL graphics API, the debug utils extension...)
@@ -84,7 +84,7 @@ In order to create an OpenXR-compatible application, a precise suite of operatio
 
 At this point, the session is ready. We can enter the main loop:
 
-#figure(image("xr-session-lifecycle.png", width: 80%), caption: [Lifecycle of an OpenXR session], placement: auto) <XR-session-lifecycle>
+#figure(image("xr-session-lifecycle.png", width: 80%), caption: [Lifecycle of an OpenXR session @xr-ref-guide], placement: auto) <XR-session-lifecycle>
 
 + Poll events from OpenXR. Update session according to the new state (see @XR-session-lifecycle for details).
 + If the session is in state `READY`, `SYNCHRONIZED`, `FOCUSED` or `VISIBLE`:
@@ -138,7 +138,7 @@ self._xr_instance = xr.create_instance(xr.InstanceCreateInfo(
 `APP_NAME` is a constant holding the name of our application that should be displayed to the user. It is defined at the beginning of the file.
 There is nothing really fancy here.
 
-#show-code(showrange: (70, 79), gobble: auto) // TODO fix gobble
+#show-code(showrange: (71, 80)) // TODO fix gobble
 Here we do a bunch of checks to ensure everything is fine and avoid weird errors when rendering afterwards. The `enumerate_view_configuration_views` call at line 73 allows to get the image width and height, that we store. We also store an additional `_width_render` field that is simply the double of the normal width: it is the total width of our stereo render target.
 
 The last part of this method is an ugly mixture of Python and C code to tell OpenXR to use OpenGL. We check that it contains no exception, and then we exit the method.
@@ -146,7 +146,7 @@ The last part of this method is an ugly mixture of Python and C code to tell Ope
 == OpenGL context and window
 _The related method is `_init_window`._
 
-#show-code(showrange: (103, 114))
+#show-code(showrange: (104, 115))
 
 We use GLFW to create a window. This window is not neccessarily visible (see line 109) but even without it, an OpenGL context will be created.\
 The `glfw.window_hint` calls are to set the parameters of the window/context to be created. Notably, we disable double-buffering (a swapchain of two images) because we do not really care about the window rendering quality and it can save us the time of image swapping.\
@@ -160,7 +160,7 @@ _The related method is `_prepare_xr`._
 
 The first part of the method has nothing really worth noting: it first creates the `graphics_binding` object that must be passed to the OpenXR session and then it creates the actual session using some C/Python code.
 
-#show-code(showrange: (145, 155))
+#show-code(showrange: (146, 156))
 
 At line 145 we create the swapchain for our stereo image, hence its width being `_width_render` (which is twice one eye's image width). The format has been selected arbitrarily, the best practice would be to enumerate the available formats and select the best one from here. The usage flags #footnote[https://registry.khronos.org/OpenXR/specs/1.1/man/html/XrSwapchainUsageFlagBits.html] contains:
 - `TRANSFER_DST` because the swapchain image will be the destination of a pixel transfer operation (seen later)
@@ -169,7 +169,7 @@ At line 145 we create the swapchain for our stereo image, hence its width being 
 
 The line 155 is there to retrieve the list of images contained in the swapchain: we do it here once instead of doing it for each frame.
 
-#show-code(showrange: (157, 171))
+#show-code(showrange: (158, 172))
 
 Here we create the projection layer for the swapchain. It is the object that instructs the runtime where to put the rendered image in the virtual user space. It is done in 3 parts:
 + The reference space for the projection is created with the default options (the `STAGE` space type #footnote[https://registry.khronos.org/OpenXR/specs/1.1/man/html/XrReferenceSpaceType.html] and default orientation and position).
@@ -181,7 +181,7 @@ Finally at line 171, we create an empty OpenGL framebuffer for the swapchain. We
 == MuJoCo preparation
 _The related method is `_prepare_mujoco`._
 
-#show-code(showrange: (177, 193))
+#show-code(showrange: (178, 194))
 
 The lines 177 and 178 are basic MuJoCo initialization. This can be done somewhere else in the code, even far sooner.
 
@@ -190,7 +190,7 @@ In this method, we mainly initialize the options of the MuJoCo scene and visuali
 At this point, everything is ready to start the main loop.
 
 == Frame loop - first part
-_The related methods are `loop`, `frame`, `_poll_xr_events` and `_start_xr_frame`._
+_The related methods are `loop`, `frame`, `_poll_xr_events` and `_wait_xr_frame`._
 
 The main loop structure looks like this:
 #sourcecode(numbering: none)[```py
@@ -204,38 +204,38 @@ loop:
 ```]
 
 The `poll_events` part is made of this:
-#show-code(showrange: (363, 366))
+#show-code(showrange: (362, 365))
 The `poll_events` method of glfw allows to know if the user wants to close the application on the desktop part (for instance, by closing the mirror window). We update the `_should_quit` field accordingly at line 366.\
 The `_poll_xr_events` method is fetching all events from the OpenXR instance and, if the event is a `SESSION_STATE_CHANGED` event, it does the following:
 #show-code(showrange: (237, 246))
 If this is not clear to you, see the Session lifecycle at @XR-session-lifecycle.
 
-If everything is fine and the visualization should not quit, we attempt to start the XR frame:
-#show-code(showrange: (209, 218))
-If the session is in the right state to render a frame, it waits for the frame to be ready (so we do not render faster than the device refresh rate) and _then_ it returns `True`.
+If everything is fine and the visualization should not quit, we wait for the next XR frame:
+#show-code(showrange: (210, 218))
+If the session is in the right state to render a frame, it waits for the frame to be ready (so we do not render faster than the device refresh rate) and _then_ it returns `True`. We do _not_ start the frame now: it's better to do it the moment right before we will actually render something.
 
 == Frame loop - second part
 _The related methods are `frame`, `_update_mujoco`, `_update_views`, `render`, `_end_xr_frame`._
 
 This only happens if the session is in the state to render a frame. This is how it goes:
-#show-code(showrange: (372, 376))
+#show-code(showrange: (371, 377))
 
 The `_update_mujoco` method is really simple:
-#show-code(showrange: (199, 200))
+#show-code(showrange: (200, 201))
 The line 199 could be done externally, it is not tied to the visualization: it only steps the physics. On the contrary, the call to `mjv_updateScene` at line 200 fetches geometries from the simulation data and stores it in the scene.
 
 The `_update_views` method is the one that takes care of the head tracking. It goes in 3 parts: first, it fetches the `view_states` which contains, for each eye, its position, orientation and field of view. Then, it updates the projection layer accordingly and the two cameras in the MuJoCo scene to follow the eyes. Finally, it tells MuJoCo that all coordinates should be transformed in a certain way (otherwise, the world is tilted to the right).
 
 The `_render` function is important and complex:
-#show-code(showrange: (287, 300))
+#show-code(showrange: (287, 299))
 This first part prepares the framebuffer we created at the end of @prepare_xr by attaching the current swapchain image.\
 `glBindFramebuffer(GL_FRAMEBUFFER, fbo)` sets the framebuffer object as the one which will receive the read and draw operations.\
 `glFramebufferTexture2D` attaches the image as the first color attachement of the framebuffer object.
 
-#show-code(showrange: (303, 304))
+#show-code(showrange: (302, 303))
 The _real_ rendering is done in the line 304. Afterwards, all is left is to copy the final image from MuJoCo's offscreen framebuffer to our own framebuffer, which has the swapchain image attached.
 
-#show-code(showrange: (306, 315))
+#show-code(showrange: (305, 315))
 The first two instructions are to set which framebuffer will be read from and which one will be drawn on.\
 `glBlitFramebuffer` is an instruction to "copy" the pixels (the color ones in our case) from the read framebuffer to the draw one. Both framebuffers color attachements have the same size, so we put the same rectangle twice.
 
@@ -250,6 +250,20 @@ To fix that, there are two options:
 - The easy one is to change the timestep of your MuJoCo model to match the refresh rate. For the Oculus Rift S, you would set the timestep to $1 slash 80 = 0.0125 s$. This however is not ideal because some simulations will not be stable at such a large timestep.
 - The harder one is to change the code to do, for each frame, the amount of simulation steps needed to advance the same amount of time the frame should durate. For a frame duration of $Delta t_"frame" = 1 slash f$ and a timestep of $Delta t_"sim"$, you would advance for $ n_"steps" = floor((Delta t_"frame") / (Delta t_"sim")) $
   You can get the frame duration using `_xr_frame_state.predicted_display_period` (in nanoseconds).
+
+== Performance
+For now, everything is single-threaded. If the simulation time is long, it can reduce drastically the framerate and lead to uncomfortable VR experience. It is however possible to split our main loop in two different threads: a "simulation" thread and a "render" thread (see @threading-slide).
+#figure(box(stroke: black, image("threading-slide.svg")), caption: [How to multithread an OpenXR application #footnote[Extract of the #link("https://www.khronos.org/assets/uploads/developers/library/2018-gdc-webgl-and-gltf/OpenXR-GDC_Mar18.pdf")[OpenXR presentation at GDC 2018]]]) <threading-slide>
+As you can see, the two threads will not be entirely parallel but some of their work will definitely be.
+
+To implement this, we first need to define which work will be given to which thread:
+- *Simulation thread:* event polling, frame waiting and simulation stepping.
+- *Render thread:* view update, frame begin/end, rendering.
+*Beware:* until now, we have grouped the simulation stepping and rendering preparation in one single step (`_update_mujoco`). This should now be split: `mj_step` will be kept in the simulation thread, while `mjv_updateScene` will be put in the rendering thread. This is because `mj_step` can be called while the simulation is being rendered, whereas `mjv_updateScene` cannot (because it contains the geometry data to be rendered).
+
+Now we know where to put which work, the only thing left to do is to split the original `frame` function in two different threads, and use a synchronization structure to signal to the render thread to do its work when simulation is over (a `threading.Semaphore` is suited for this).
+
+A race condition might happen when you remove the headset in this multithreaded setup: `xr.end_session` might be called by the simulation thread while a frame is still being rendered by the other thread. To avoid this, use another synchronization structure (a `threading.Condition` is fine).
 
 == Hand tracking
 Hand tracking is not included in the demo file, because it is tied in how the hand is represented in the MJCF. However, here are the basic steps to implement it:

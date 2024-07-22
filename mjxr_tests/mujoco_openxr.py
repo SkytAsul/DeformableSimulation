@@ -23,6 +23,7 @@ class MujocoXRViewer:
         self._init_window()
         self._prepare_xr()
         self._prepare_mujoco()
+        glfw.make_context_current(None) # To let other threads use the context if needed
         return self
 
     def _init_xr(self):
@@ -199,9 +200,9 @@ class MujocoXRViewer:
         mujoco.mj_step(self._mj_model, self._mj_data)
         mujoco.mjv_updateScene(self._mj_model, self._mj_data, self._mj_option, None, self._mj_camera, mujoco.mjtCatBit.mjCAT_ALL, self._mj_scene)
 
-    def _start_xr_frame(self):
+    def _wait_xr_frame(self):
         """
-        Starts a frame in the OpenXR environment.
+        Wait to begin the next OpenXR frame.
 
         Returns:
             bool: whether or not we should update the scene and maybe render it.
@@ -213,7 +214,6 @@ class MujocoXRViewer:
             xr.SessionState.VISIBLE,
         ]:
             self._xr_frame_state = xr.wait_frame(self._xr_session, xr.FrameWaitInfo())
-            xr.begin_frame(self._xr_session, None)
             return True
         return False
 
@@ -289,7 +289,6 @@ class MujocoXRViewer:
         xr.wait_swapchain_image(self._xr_swapchain, xr.SwapchainImageWaitInfo(timeout=xr.INFINITE_DURATION))
         
         # Once we acquired it, we bind the image to our framebuffer object
-        glfw.make_context_current(self._window)
         GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._xr_swapchain_fbo)
         GL.glFramebufferTexture2D(
             GL.GL_FRAMEBUFFER,
@@ -368,14 +367,17 @@ class MujocoXRViewer:
         if self._should_quit:
             return
         
-        if self._start_xr_frame():
+        if self._wait_xr_frame():
             self._update_mujoco()
             self._update_views()
+            
+            xr.begin_frame(self._xr_session, None)
             if self._xr_frame_state.should_render:
                 self._render()
             self._end_xr_frame()
     
     def loop(self):
+        glfw.make_context_current(self._window)
         while not self._should_quit:
             self.frame()
 
