@@ -30,6 +30,8 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._samples = samples
         self._should_quit = False
         self._wait_i = 0
+        self._event_not_rendering = threading.Event()
+        self._event_not_rendering.set()
 
         if fps_counter:
             self._fps_bench = Benchmarker("FPS counter")
@@ -306,7 +308,6 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             
             self._xr_frame_state = xr.wait_frame(self._xr_session, xr.FrameWaitInfo())
             self._wait_i += 1
-            print("Started frame", self._wait_i)
             return True
         return False
 
@@ -344,8 +345,13 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
                             if not self._should_quit:
                                 xr.begin_session(self._xr_session, xr.SessionBeginInfo(xr.ViewConfigurationType.PRIMARY_STEREO))
                         case xr.SessionState.STOPPING:
-                            # means the session should end BUT it can start again later,
-                            # this happens for instance when the user removes the headset
+                            # Means the session should end BUT it can start again later,
+                            # this happens for instance when the user removes the headset.
+                            # However, due to rendering being done in another thread, we could
+                            # call end_session while a frame is about to be rendered (or is in
+                            # the process of being rendered). We must use some sort of synchronization
+                            # mechanism: here, an Event, which internally uses a Lock and a Condition. 
+                            self._event_not_rendering.wait()
                             xr.end_session(self._xr_session)
                         case xr.SessionState.EXITING | xr.SessionState.LOSS_PENDING:
                             self._should_quit = True
@@ -531,7 +537,10 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             
         glfw.make_context_current(None)
 
-    def _render_frame(self, index):
+    def _render_frame(self, index: int):
+        # Clearing the event here might not be the best option, TODO investigate possible race conditions.
+        self._event_not_rendering.clear()
+
         if self._fps_bench:
             self._fps_bench.new_iteration()
         
@@ -554,6 +563,8 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
 
         if self._fps_bench:
             self._fps_bench.end_iteration()
+
+        self._event_not_rendering.set()
 
     def start_visualization(self):
         self._render_running = True
