@@ -1,5 +1,5 @@
 #import "@preview/bubble:0.1.0": *
-#import "@preview/codelst:2.0.1": sourcecode, sourcefile
+#import "@local/codelst:2.0.2": sourcecode, sourcefile
 
 
 #show: bubble.with(
@@ -138,7 +138,7 @@ self._xr_instance = xr.create_instance(xr.InstanceCreateInfo(
 `APP_NAME` is a constant holding the name of our application that should be displayed to the user. It is defined at the beginning of the file.
 There is nothing really fancy here.
 
-#show-code(showrange: (71, 80)) // TODO fix gobble
+#show-code(showrange: (71, 80))
 Here we do a bunch of checks to ensure everything is fine and avoid weird errors when rendering afterwards. The `enumerate_view_configuration_views` call at line 73 allows to get the image width and height, that we store. We also store an additional `_width_render` field that is simply the double of the normal width: it is the total width of our stereo render target.
 
 The last part of this method is an ugly mixture of Python and C code to tell OpenXR to use OpenGL. We check that it contains no exception, and then we exit the method.
