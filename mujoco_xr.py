@@ -19,7 +19,7 @@ APP_NAME = "Deformable Simulation"
 FRUSTUM_NEAR = 0.05
 FRUSTUM_FAR = 50
 BENCH_PER_FRAME = True
-BENCH_USE_PREDICTED_FPS = True
+BENCH_USE_PREDICTED_FPS = False
 BENCH_TIMEDELTA = timedelta(seconds=2)
 
 class MujocoXRVisualizer(Visualizer, HandPoseProvider):
@@ -218,7 +218,9 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
 
         self._xr_projection_layer = xr.CompositionLayerProjection(
             # Default space params are okay: identity quaternion and zero vector. Let's use them.
-            space=xr.create_reference_space(self._xr_session, xr.ReferenceSpaceCreateInfo()),
+            space=xr.create_reference_space(self._xr_session, xr.ReferenceSpaceCreateInfo(
+                reference_space_type=xr.ReferenceSpaceType.LOCAL # We use the LOCAL space so our scene is in front of us when we start the simulation
+            )),
             views = [xr.CompositionLayerProjectionView(
                 sub_image=xr.SwapchainSubImage(
                     swapchain=self._xr_swapchain,
@@ -390,7 +392,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._mj_scene.enabletransform = True
         self._mj_scene.rotate[0] = numpy.cos(0.25 * numpy.pi)
         self._mj_scene.rotate[1] = numpy.sin(-0.25 * numpy.pi)
-        self._mj_scene.translate[1] = 1
+        self._mj_scene.translate[1] = -1
 
     def _fetch_actions(self):
         xr.sync_actions(self._xr_session, xr.ActionsSyncInfo(active_action_sets = ctypes.pointer(xr.ActiveActionSet(

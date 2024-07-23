@@ -1,0 +1,205 @@
+<mujoco model="Abdomen - Deformable left kidney">
+    <size memory="1G" />
+    <statistic extent="1.5" meansize=".05" />
+
+    <option solver="CG" tolerance="1e-6" timestep=".0014" integrator="implicitfast" jacobian="sparse">
+        <!-- The timestep is adjusted so the flexcomp does not explode as soon as the simulation start.
+         It is better to have the largest value possible to reduce the time it takes for the simulation
+         to compute while still keeping accuracy. -->
+    </option>
+
+    <visual>
+        <rgba haze="0.15 0.25 0.35 1" />
+        <quality shadowsize="4096" />
+        <map stiffness="100" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3" />
+    </visual>
+
+    <default>
+        <default class="phantom">
+            <mesh scale="3 3 3" />
+            <default class="visual">
+                <geom group="2" type="mesh" contype="0" conaffinity="0" />
+            </default>
+            <default class="collision">
+                <geom group="2" type="mesh" />
+            </default>
+        </default>
+    </default>
+
+    <extension>
+        <plugin plugin="mujoco.elasticity.solid" />
+    </extension>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="1 0.5 0.7" rgb2="0 0 0" width="512"
+            height="512" />
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
+            width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
+
+        <material name="matplane" reflectance="0.3" texture="texplane" texrepeat="1 1"
+            texuniform="true" />
+
+        <!-- Abdomen phantom -->
+        <material name="aorta"
+            rgba="1.000000 0.750000 0.750000 1.000000" />
+        <material name="cava"
+            rgba="0.500000 0.500000 1.000000 1.000000" />
+        <material name="fat" specular="0.25" shininess="0.1"
+            rgba="1.000000 1.000000 0.650000 1.000000" />
+        <material name="inner_spine"
+            rgba="1.000000 1.000000 1.000000 1.000000" />
+        <material name="liver"
+            rgba="0.500000 0.250000 0.250000 1.000000" />
+        <material name="muscle"
+            rgba="1.000000 0.500000 0.500000 1.000000" />
+        <material name="outer_spine"
+            rgba="1.000000 1.000000 0.850000 1.000000" />
+        <material name="portal_vein"
+            rgba="0.750000 0.250000 0.250000 1.000000" />
+        <material name="ribs"
+            rgba="1.000000 1.000000 0.850000 1.000000" />
+        <material name="right_kidney"
+            rgba="0.800000 0.400000 0.400000 1.000000" />
+        <mesh class="phantom" file="phantom-assets/right_kidney.obj" />
+        <mesh class="phantom" file="phantom-assets/ribs.obj" />
+        <mesh class="phantom" file="phantom-assets/portal_vein.obj" />
+        <mesh class="phantom" file="phantom-assets/outer_spine.obj" />
+        <mesh class="phantom" file="phantom-assets/muscle.obj" />
+        <mesh class="phantom" file="phantom-assets/liver.obj" />
+        <mesh class="phantom" file="phantom-assets/inner_spine.obj" />
+        <mesh class="phantom" file="phantom-assets/fat.obj" />
+        <mesh class="phantom" file="phantom-assets/cava.obj" />
+        <mesh class="phantom" file="phantom-assets/aorta.obj" />
+
+        <!-- Hand -->
+        <material name="thumb_1" specular="0.5" shininess="0.25" rgba="1 0.934 0.905 1" />
+        <mesh name="thumb_1_visual" file="hand-assets/thumb_1_visual.obj" />
+        <material name="thumb_2" specular="0.5" shininess="0.25" rgba="0 0 0 1" />
+        <mesh name="thumb_2_visual" file="hand-assets/thumb_2_visual.obj" />
+        <material name="index_1" specular="0.5" shininess="0.25" rgba="0.8 0.732 0 1" />
+        <mesh name="index_1_visual" file="hand-assets/index_1_visual.obj" />
+        <material name="index_2" specular="0.5" shininess="0.25" rgba="0.54 0.8 0.0765 1" />
+        <mesh name="index_2_visual" file="hand-assets/index_2_visual.obj" />
+        <material name="index_3" specular="0.5" shininess="0.25" rgba="0.801 0.35 0.273 1" />
+        <mesh name="index_3_visual" file="hand-assets/index_3_visual.obj" />
+        <material name="middle_1" specular="0.5" shininess="0.25" rgba="0.0147 0.0206 0.8 1" />
+        <mesh name="middle_1_visual" file="hand-assets/middle_1_visual.obj" />
+        <material name="middle_2" specular="0.5" shininess="0.25" rgba="0.0125 0.777 0.8 1" />
+        <mesh name="middle_2_visual" file="hand-assets/middle_2_visual.obj" />
+        <material name="middle_3" specular="0.5" shininess="0.25" rgba="0.318 0.19 0.8 1" />
+        <mesh name="middle_3_visual" file="hand-assets/middle_3_visual.obj" />
+        <material name="annular_1" specular="0.5" shininess="0.25" rgba="0.8 0 0.0115 1" />
+        <mesh name="annular_1_visual" file="hand-assets/annular_1_visual.obj" />
+        <material name="annular_2" specular="0.5" shininess="0.25" rgba="0.8 0.209 0 1" />
+        <mesh name="annular_2_visual" file="hand-assets/annular_2_visual.obj" />
+        <material name="annular_3" specular="0.5" shininess="0.25" rgba="0.8 0.119 0.174 1" />
+        <mesh name="annular_3_visual" file="hand-assets/annular_3_visual.obj" />
+        <material name="pinky_1" specular="0.5" shininess="0.25" rgba="0.8 0.0539 0.642 1" />
+        <mesh name="pinky_1_visual" file="hand-assets/pinky_1_visual.obj" />
+        <material name="pinky_2" specular="0.5" shininess="0.25" rgba="0.248 0.00367 0.8 1" />
+        <mesh name="pinky_2_visual" file="hand-assets/pinky_2_visual.obj" />
+        <material name="pinky_3" specular="0.5" shininess="0.25" rgba="0.254 0.0034 0.437 1" />
+        <mesh name="pinky_3_visual" file="hand-assets/pinky_3_visual.obj" />
+        <material name="wrist" specular="0.5" shininess="0.16" rgba="0.701 0.196 0.151 1" />
+        <mesh name="wrist_visual" file="hand-assets/wrist_visual.obj" />
+        <material name="palm" specular="0.5" shininess="0.25" rgba="0 0.8 0.00195 1" />
+        <mesh name="palm_visual" file="hand-assets/palm_visual.obj" />
+    </asset>
+
+    <equality>
+        <weld body1="right_hand_mocap" body2="right_hand_collision"
+            solref="0.01 1" solimp=".9 .9 0.01" />
+    </equality>
+
+    <sensor>
+        <touch site="fingertip" name="fingertip_sensor" />
+    </sensor>
+
+    <worldbody>
+        <body pos="0 0 0" euler="90 90 0">
+            <geom type='capsule' size=".02 .1" rgba="1 0 0 1" contype="0" conaffinity="0" />
+        </body>
+
+        <body name="finger" mocap="true" pos="2 0 1" euler="90 0 0">
+            <geom type="capsule" size="0.01115 0.036" />
+        </body>
+        <frame name="right_hand_frame" pos="-0.2 0 1">
+            <body name="right_hand_mocap" mocap="true">
+                <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .2" class="visual" />
+            </body>
+            <body name="right_hand_collision" pos="0 -0.03 0" euler="180 0 0">
+                <freejoint />
+                <site name="fingertip" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                <geom name="thumb_1_visual" class="collision" material="thumb_1"
+                    mesh="thumb_1_visual" />
+                <geom name="thumb_2_visual" class="collision" material="thumb_2"
+                    mesh="thumb_2_visual" />
+                <geom name="index_1_visual" class="collision" material="index_1"
+                    mesh="index_1_visual" />
+                <geom name="index_2_visual" class="collision" material="index_2"
+                    mesh="index_2_visual" />
+                <geom name="index_3_visual" class="collision" material="index_3"
+                    mesh="index_3_visual" />
+                <geom name="middle_1_visual" class="collision" material="middle_1"
+                    mesh="middle_1_visual" />
+                <geom name="middle_2_visual" class="collision" material="middle_2"
+                    mesh="middle_2_visual" />
+                <geom name="middle_3_visual" class="collision" material="middle_3"
+                    mesh="middle_3_visual" />
+                <geom name="annular_1_visual" class="collision" material="annular_1"
+                    mesh="annular_1_visual" />
+                <geom name="annular_2_visual" class="collision" material="annular_2"
+                    mesh="annular_2_visual" />
+                <geom name="annular_3_visual" class="collision" material="annular_3"
+                    mesh="annular_3_visual" />
+                <geom name="pinky_1_visual" class="collision" material="pinky_1"
+                    mesh="pinky_1_visual" />
+                <geom name="pinky_2_visual" class="collision" material="pinky_2"
+                    mesh="pinky_2_visual" />
+                <geom name="pinky_3_visual" class="collision" material="pinky_3"
+                    mesh="pinky_3_visual" />
+                <geom name="wrist_visual" class="visual" material="wrist" mesh="wrist_visual" />
+                <geom name="palm_visual" class="collision" material="palm" mesh="palm_visual" />
+            </body>
+        </frame>
+
+        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
+            dir="0 0 -1" castshadow="false" />
+        <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
+
+        <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" material="matplane"
+            condim="1" />
+
+        <frame pos=".1 0 1.3" euler="0 0 180">
+            <body name="abdomen phantom" childclass="phantom">
+                <!-- Only visual for now until convex hull -->
+                <geom mesh="right_kidney" material="right_kidney" class="visual" />
+                <geom mesh="ribs" material="ribs" class="visual" />
+                <geom mesh="portal_vein" material="portal_vein" class="visual" />
+                <geom mesh="outer_spine" material="outer_spine" class="visual" />
+                <geom mesh="muscle" material="muscle" class="visual" />
+                <geom mesh="liver" material="liver" class="visual" />
+                <geom mesh="inner_spine" material="inner_spine" class="visual" />
+                <geom mesh="fat" material="fat" class="visual" />
+                <geom mesh="cava" material="cava" class="visual" />
+                <geom mesh="aorta" material="aorta" class="visual" />
+            </body>
+
+            <!-- For some reason, the position and orientation from the parent frame is not
+             accumulated in the flexcomp. The "real" position should be pos="0 .09 .15" -->
+            <flexcomp name="left kidney" type="gmsh" dim="3" pos=".1 -.09 1.45" euler="0 0 180"
+                file="phantom-assets/left kidney_converted_vol.msh" scale="3 3 3">
+                <edge equality="true" />
+                <pin id="47 38 58" />
+                <contact internal="false" condim="3" solref="0.005 1" solimp=".95 .99 .0001"
+                    selfcollide="none" />
+                <plugin plugin="mujoco.elasticity.solid">
+                    <config key="poisson" value="0.1" />
+                    <config key="young" value="5e4" />
+                    <config key="damping" value="0.005" />
+                </plugin>
+            </flexcomp>
+        </frame>
+
+    </worldbody>
+</mujoco>

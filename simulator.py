@@ -20,7 +20,7 @@ def simulation(engine: Engine,
                 weart: WeartConnector | None,
                 visualizer: Visualizer,
                 hand: HandPoseProvider | None):
-    print("Starting simulation.")
+    print("Starting simulation...")
     engine.start_simulation()
     if weart is not None:
         weart.start_listeners()
@@ -30,10 +30,12 @@ def simulation(engine: Engine,
     force_plot = Plotter(title="Applied force graph")
 
     def loop():
+        print("Starting visualization...")
         visualizer.start_visualization()
         if isinstance(visualizer, MujocoXRVisualizer):
             visualizer.add_perf_counters(perf_bench, frame_bench)
 
+        print("Done! Everything is up and running.\n")
         try:
             while not visualizer.should_exit():
                 frame_bench.new_iteration()
@@ -49,10 +51,8 @@ def simulation(engine: Engine,
 
                 if weart is not None:
                     angle = closure_to_angle(weart.get_index_closure())
-                    perf_bench.mark("Closure angle computation")
-
                     engine.move_finger(angle)
-                    perf_bench.mark("Apply finger rotation")
+                    perf_bench.mark("Hand movements")
 
                 if hand is not None:
                     hand_pose = hand.get_hand_pose(0)
@@ -63,7 +63,7 @@ def simulation(engine: Engine,
                 perf_bench.mark("Step simulation")
 
                 visualizer.render_frame()
-                perf_bench.mark("Render")
+                # perf_bench.mark("Render")
 
                 force = engine.get_contact_force()
                 # perf_bench.mark("Contact force")
@@ -76,7 +76,7 @@ def simulation(engine: Engine,
                 force_plot.end_iteration()
                 perf_bench.end_iteration()
         except KeyboardInterrupt:
-            pass # to exit gracefully
+            pass # To exit gracefully. Even though we swallow the error, we still exit the loop.
         finally:
             force_plot.stop()
             perf_bench.stop()
@@ -88,6 +88,8 @@ def simulation(engine: Engine,
 
             print("Stopping simulation...")
             engine.stop_simulation()
+
+            print("Ciao!")
 
     threaded = False
     if threaded:
@@ -103,9 +105,10 @@ def simulation(engine: Engine,
 if __name__ == "__main__":
     used_engine = "mujoco"
     used_viz = "openxr"
-    use_weart = False
-    #scene_path = "assets/MuJoCo scene.xml"
-    scene_path = "assets/balloons.xml"
+    use_weart = True
+    # scene_path = "assets/MuJoCo scene simple.xml"
+    # scene_path = "assets/balloons.xml"
+    scene_path = "assets/MuJoCo phantom.xml"
 
     print("Starting script...\n")
 
@@ -115,7 +118,7 @@ if __name__ == "__main__":
         case "mujoco":
             print("Loading MuJoCo...")
             engine = mujoco = MujocoConnector(scene_path)
-            print("Loaded.")
+            print("Loaded.\n")
         case "coppelia":
             print("Connecting to Coppelia...")
             engine = CoppeliaConnector()
@@ -128,12 +131,12 @@ if __name__ == "__main__":
             visualizer_ctx = nullcontext(MujocoSimpleVisualizer(mujoco))
         case "openxr":
             print("Loading Virtual Reality...")
-            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=False, samples=8, fps_counter=True)
+            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=False, samples=8, fps_counter=False)
         case _:
             raise RuntimeError("Invalid visualizer name")
 
     with visualizer_ctx as visualizer:
-        print("Visualizer created.")
+        print("Visualizer created.\n")
 
         if use_weart:
             print("Connecting to WEART...")
