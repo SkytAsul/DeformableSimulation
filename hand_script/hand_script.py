@@ -62,6 +62,10 @@ class Options:
     """Should the existing .obj assets from another execution be reused.
     Only effective if the user answered "Yes" to the overwrite prompt or if the overwrite option is enabled.
     """
+    only_visual: bool = False
+    """Skip convex decomposition and splitting in multiple bodies"""
+    scale: float = 1
+    """Scale factor of the model"""
     verbose: bool = True
     """Should informations be printed to the standard output."""
 
@@ -140,14 +144,20 @@ class HandCreator:
         if material is None:
             raise RuntimeError("No material for part", fullname)
 
-        # Recenter the geometry
-        # WARNING: the center is arbitrary. Joints would have to be repositioned.
-        x,y,z  = [ [ v[i] for v in geom.vertices ] for i in range(3) ]
-        center = [ (max(axis) + min(axis))/2 for axis in [x,y,z] ]
-        geom.vertices -= center
+        # Scale before recenter !
+        geom.vertices *= self.options.scale
 
-        # Create the body in which we will put the geometries
-        partbody = parent.add("body", name=fullname, pos=relative_pos(center, parent))
+        if self.options.only_visual:
+            partbody = parent
+        else:
+            # Recenter the geometry
+            # WARNING: the center is arbitrary. Joints would have to be repositioned.
+            x,y,z  = [ [ v[i] for v in geom.vertices ] for i in range(3) ]
+            center = [ (max(axis) + min(axis))/2 for axis in [x,y,z] ]
+            geom.vertices -= center
+
+            # Create the body in which we will put the geometries
+            partbody = parent.add("body", name=fullname, pos=relative_pos(center, parent))
 
         # Visual mesh, geometry and material
         visual_name = fullname + "_visual"
@@ -163,31 +173,32 @@ class HandCreator:
         partbody.add("geom", mesh=visual_name, name=visual_name,
                      dclass="visual", material=material.name)
 
-        # Collision meshes and geometries
-        if self.options.reuse_old_assets:
-            logging.info("Reusing convex hull from another time...")
-            for collision_file in self.options.output.glob(fullname + "_collision_*"):
-                i = collision_file.stem.split("_")[-1]
-                collision_name = collision_file.stem
-                self.model.asset.add("mesh", name=collision_name,
-                                    file=UnhashedAsset(collision_file.read_text(), collision_name, ".obj"))
-                colors = np.random.rand(3)
-                partbody.add("geom", mesh=collision_name, name=collision_name,
-                            dclass="collision", rgba = [*colors, 1])
-        else:
-            logging.info("Decomposing convex hull...")
-            mesh = coacd.Mesh(geom.vertices, geom.faces)
-            parts = coacd.run_coacd(mesh, max_convex_hull=convex_parts)
+        if not self.options.only_visual:
+            # Collision meshes and geometries
+            if self.options.reuse_old_assets:
+                logging.info("Reusing convex hull from another time...")
+                for collision_file in self.options.output.glob(fullname + "_collision_*"):
+                    i = collision_file.stem.split("_")[-1]
+                    collision_name = collision_file.stem
+                    self.model.asset.add("mesh", name=collision_name,
+                                        file=UnhashedAsset(collision_file.read_text(), collision_name, ".obj"))
+                    colors = np.random.rand(3)
+                    partbody.add("geom", mesh=collision_name, name=collision_name,
+                                dclass="collision", rgba = [*colors, 1])
+            else:
+                logging.info("Decomposing convex hull...")
+                mesh = coacd.Mesh(geom.vertices, geom.faces)
+                parts = coacd.run_coacd(mesh, max_convex_hull=convex_parts)
 
-            for i, (vs, fs) in enumerate(parts):
-                collision_name = f"{fullname}_collision_{i}"
-                part_geom = trimesh.Trimesh(vs, fs)
-                mesh_contents = part_geom.export(None, "obj", include_texture=False, header=None)
-                self.model.asset.add("mesh", name=collision_name,
-                                    file=UnhashedAsset(mesh_contents, collision_name, ".obj"))
-                colors = np.random.rand(3)
-                partbody.add("geom", mesh=collision_name, name=collision_name,
-                            dclass="collision", rgba = [*colors, 1])
+                for i, (vs, fs) in enumerate(parts):
+                    collision_name = f"{fullname}_collision_{i}"
+                    part_geom = trimesh.Trimesh(vs, fs)
+                    mesh_contents = part_geom.export(None, "obj", include_texture=False, header=None)
+                    self.model.asset.add("mesh", name=collision_name,
+                                        file=UnhashedAsset(mesh_contents, collision_name, ".obj"))
+                    colors = np.random.rand(3)
+                    partbody.add("geom", mesh=collision_name, name=collision_name,
+                                dclass="collision", rgba = [*colors, 1])
 
         return partbody
 

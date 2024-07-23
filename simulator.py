@@ -4,6 +4,7 @@ from coppelia import CoppeliaConnector
 from mujoco_connector import MujocoConnector, MujocoSimpleVisualizer
 from mujoco_xr import MujocoXRVisualizer
 from weart import WeartConnector
+from guis import TUI
 from benchmarking import Benchmarker, Plotter
 
 # libraries
@@ -19,8 +20,9 @@ def closure_to_angle(closure):
 def simulation(engine: Engine,
                 weart: WeartConnector | None,
                 visualizer: Visualizer,
-                hand: HandPoseProvider | None):
-    print("Starting simulation...")
+                hand: HandPoseProvider | None,
+                gui: GUI):
+    print("Starting simulation.")
     engine.start_simulation()
     if weart is not None:
         weart.start_listeners()
@@ -32,12 +34,13 @@ def simulation(engine: Engine,
     def loop():
         print("Starting visualization...")
         visualizer.start_visualization()
+        gui.start_gui(engine)
         if isinstance(visualizer, MujocoXRVisualizer):
             visualizer.add_perf_counters(perf_bench, frame_bench)
 
         print("Done! Everything is up and running.\n")
         try:
-            while not visualizer.should_exit():
+            while not visualizer.should_exit() and not gui.should_exit():
                 frame_bench.new_iteration()
                 frame_continue, frame_duration = visualizer.wait_frame()
                 frame_bench.mark("Wait frame")
@@ -82,9 +85,9 @@ def simulation(engine: Engine,
             perf_bench.stop()
             #perf_bench.export_csv("benchmark.csv", include_time=True)
 
-            if visualizer is not None:
-                print("Stopping visualization...")
-                visualizer.stop_visualization()
+            print("Stopping visualization...")
+            gui.stop_gui()
+            visualizer.stop_visualization()
 
             print("Stopping simulation...")
             engine.stop_simulation()
@@ -104,15 +107,16 @@ def simulation(engine: Engine,
 
 if __name__ == "__main__":
     used_engine = "mujoco"
-    used_viz = "openxr"
-    use_weart = True
-    # scene_path = "assets/MuJoCo scene simple.xml"
+    used_viz = "simple"
+    use_weart = False
+    used_gui = "tui"
+    # scene_path = "assets/MuJoCo scene.xml"
     # scene_path = "assets/balloons.xml"
     scene_path = "assets/MuJoCo phantom.xml"
 
     print("Starting script...\n")
 
-    engine = visualizer = weart = hand = None
+    engine = visualizer = weart = hand = gui = None
 
     match used_engine:
         case "mujoco":
@@ -135,6 +139,12 @@ if __name__ == "__main__":
         case _:
             raise RuntimeError("Invalid visualizer name")
 
+    match used_gui:
+        case "tui":
+            gui = TUI()
+        case _:
+            raise RuntimeError("Invalid GUI name")
+
     with visualizer_ctx as visualizer:
         print("Visualizer created.\n")
 
@@ -152,4 +162,4 @@ if __name__ == "__main__":
                 weart.calibrate()
                 print("Calibrated.\n")
 
-            simulation(engine, weart, visualizer, hand)
+            simulation(engine, weart, visualizer, hand, gui)

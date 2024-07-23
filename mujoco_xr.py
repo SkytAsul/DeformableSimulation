@@ -267,18 +267,17 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         """
         Prepares the MuJoCo environment.
         """
-        self._mj_model = self._mj_connector.model
-        self._mj_data = self._mj_connector.data
-        self._mj_scene = mujoco.MjvScene(self._mj_model, 1000)
+        mj_model = self._mj_connector.model
+        self._mj_scene = mujoco.MjvScene(mj_model, 1000)
         self._mj_scene.stereo = mujoco.mjtStereo.mjSTEREO_SIDEBYSIDE
 
         # We want the visualization properties set BEFORE creation of the context,
         # otherwise we would have to call mjr_resizeOffscreen.
-        self._mj_model.vis.global_.offwidth = self._width_render
-        self._mj_model.vis.global_.offheight = self._height
-        self._mj_model.vis.quality.offsamples = 0 if self._samples is None else self._samples
+        mj_model.vis.global_.offwidth = self._width_render
+        mj_model.vis.global_.offheight = self._height
+        mj_model.vis.quality.offsamples = 0 if self._samples is None else self._samples
 
-        self._mj_context = mujoco.MjrContext(self._mj_model, mujoco.mjtFontScale.mjFONTSCALE_100)
+        self._mj_context = mujoco.MjrContext(mj_model, mujoco.mjtFontScale.mjFONTSCALE_100)
         self._mj_camera = mujoco._structs.MjvCamera()
         self._mj_option = mujoco.MjvOption()
         # We do NOT want to call mjv_defaultFreeCamera
@@ -290,7 +289,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         Updates MuJoCo for one frame.
         """
         # The simulation is being stepped outside
-        mujoco.mjv_updateScene(self._mj_model, self._mj_data, self._mj_option, None, self._mj_camera, mujoco.mjtCatBit.mjCAT_ALL, self._mj_scene)
+        mujoco.mjv_updateScene(self._mj_connector.model, self._mj_connector.data, self._mj_option, None, self._mj_camera, mujoco.mjtCatBit.mjCAT_ALL, self._mj_scene)
 
     def _wait_xr_frame(self):
         """

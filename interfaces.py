@@ -1,4 +1,9 @@
+"""Contains the classes that must be implemented to have a complete simulation.
+"""
+
 class Engine:
+    """Represents a link to a physics engine.
+    """
     def move_finger(self, angle : float):
         """Move the virtual finger with an angle
 
@@ -25,10 +30,16 @@ class Engine:
             If None, then only step once.
         """        
         pass
+    def reset_simulation(self):
+        """Resets the simulation to its original state.
+        """
+        pass
     def stop_simulation(self):
         pass
 
 class Visualizer:
+    """Represents a way to visualize the simulation.
+    """
     def start_visualization(self):
         pass
     def wait_frame(self) -> tuple[bool, float | None]:
@@ -48,6 +59,8 @@ class Visualizer:
         pass
 
 class HandPoseProvider:
+    """Represents an object that can provide the position of hands in real-time.
+    """
     def get_hand_pose(self, hand_id: int) -> tuple[list[float], list[float]]:
         """Retrieves the hand pose.
 
@@ -60,4 +73,14 @@ class HandPoseProvider:
         """        
         pass
 
-__all__ = ['Engine', 'Visualizer', 'HandPoseProvider']
+class GUI:
+    """Represents a way for the user to interact with the simulation.
+    """
+    def start_gui(self, engine: Engine):
+        pass
+    def should_exit(self) -> bool:
+        return False
+    def stop_gui(self):
+        pass
+
+__all__ = ['Engine', 'Visualizer', 'HandPoseProvider', 'GUI']
