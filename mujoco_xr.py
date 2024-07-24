@@ -235,7 +235,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._xr_swapchain_fbo = GL.glGenFramebuffers(1)
     
     def _prepare_xr_hand_tracking(self):
-        subaction_path = xr.string_to_path(self._xr_instance, "/user/hand/right")
+        subaction_paths = [xr.string_to_path(self._xr_instance, f"/user/hand/{side}") for side in ["left", "right"]]
         self._action_set = xr.create_action_set(
             instance=self._xr_instance,
             create_info=xr.ActionSetCreateInfo(
@@ -248,19 +248,19 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             action_type=xr.ActionType.POSE_INPUT,
             action_name="hand_pose",
             localized_action_name="Hand Pose",
-            subaction_paths=[subaction_path]
+            subaction_paths=subaction_paths
         ))
         xr.suggest_interaction_profile_bindings(self._xr_instance, xr.InteractionProfileSuggestedBinding(
             interaction_profile=xr.string_to_path(self._xr_instance, "/interaction_profiles/khr/simple_controller"),
             suggested_bindings=[xr.ActionSuggestedBinding(
                 action=action,
-                binding=xr.string_to_path(self._xr_instance, "/user/hand/right/input/grip/pose")
-            )]
+                binding=xr.string_to_path(self._xr_instance, "/user/hand/{side}/input/grip/pose")
+            ) for side in ["left", "right"]]
         ))
-        self._action_space = xr.create_action_space(self._xr_session, xr.ActionSpaceCreateInfo(
+        self._action_spaces = [xr.create_action_space(self._xr_session, xr.ActionSpaceCreateInfo(
             action=action,
             subaction_path=subaction_path
-        ))
+        )) for subaction_path in subaction_paths]
         xr.attach_session_action_sets(self._xr_session, xr.SessionActionSetsAttachInfo(action_sets=[self._action_set]))
 
     def _prepare_mujoco(self):
@@ -315,12 +315,12 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         return False
 
     def _end_xr_frame(self):
-        estXT = self._xr_frame_state.predicted_display_time
-        estPC = self.xrConvertTimeToWin32PerformanceCounterKHR(estXT)
-        curPC = time.perf_counter_ns()
-        curXT = self.xrConvertWin32PerformanceCounterToTimeKHR(curPC).value // 100
-        diffXT = (estXT - curXT) / 1.e9
-        diffPC = (estPC * 100 - curPC) / 1.e9
+        # estXT = self._xr_frame_state.predicted_display_time
+        # estPC = self.xrConvertTimeToWin32PerformanceCounterKHR(estXT)
+        # curPC = time.perf_counter_ns()
+        # curXT = self.xrConvertWin32PerformanceCounterToTimeKHR(curPC).value // 100
+        # diffXT = (estXT - curXT) / 1.e9
+        # diffPC = (estPC * 100 - curPC) / 1.e9
         # print(f"XT {diffXT} | PC {diffPC}")
         # self._fps_bench.plot(diffPC, "Left")
 
@@ -602,7 +602,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
     
     def get_hand_pose(self, hand_id: int):
         space_location = xr.locate_space(
-            space=self._action_space,
+            space=self._action_spaces[hand_id],
             base_space=self._xr_projection_layer.space,
             time=self._xr_frame_state.predicted_display_time
         )

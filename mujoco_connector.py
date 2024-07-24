@@ -14,6 +14,7 @@ class MujocoConnector(Engine):
         self.model = mj.MjModel.from_xml_path(xml_path)
         self.data = mj.MjData(self.model)
         self._fetch_finger()
+        self._fetch_hands()
 
     def _fetch_finger(self):
         finger = self.model.body("finger")
@@ -23,7 +24,8 @@ class MujocoConnector(Engine):
         self._finger_axis_point = finger.pos.copy()
         self._finger_axis_point[1] -= finger_geom.size[1]
 
-        self._right_hand_id = self.model.body("right_hand_mocap").mocapid[0]
+    def _fetch_hands(self):
+        self._hand_mocaps = [self.model.body(f"{side}_hand_mocap").mocapid[0] for side in ["left", "right"]]
 
     def move_finger(self, angle : float):
         rot = np.array([.0, .0, .0, .0])
@@ -33,12 +35,15 @@ class MujocoConnector(Engine):
         mj.mju_rotVecQuat(self.data.mocap_pos[self._finger_id], self._finger_base_pos - self._finger_axis_point, rot)
         self.data.mocap_pos[self._finger_id] += self._finger_axis_point
     
-    def move_hand(self, hand_id: int, position: list[int], rotation: list[int]):
-        self.data.mocap_pos[self._right_hand_id] = position
-        self.data.mocap_quat[self._right_hand_id] = rotation
+    def move_hand(self, hand_id: int, position: list[float], rotation: list[float]):
+        self.data.mocap_pos[self._hand_mocaps[hand_id]] = position
+        self.data.mocap_quat[self._hand_mocaps[hand_id]] = rotation
 
-    def get_contact_force(self) -> float:
-        data = self.data.sensor("fingertip_sensor").data
+    def get_contact_force(self, hand_id: int, finger: str) -> float:
+        sensor_name = "left" if hand_id == 0 else "right"
+        sensor_name += "_fingertip_" + finger
+        # e.g. left_fingertip_thumb
+        data = self.data.sensor(sensor_name).data
         # data is an array containing only one number: the normal force
         return data[0] / 30
 

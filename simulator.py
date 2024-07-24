@@ -3,7 +3,7 @@ from interfaces import *
 from coppelia import CoppeliaConnector
 from mujoco_connector import MujocoConnector, MujocoSimpleVisualizer
 from mujoco_xr import MujocoXRVisualizer
-from weart import WeartConnector
+from weart import WeartConnector, HAPTIC_FINGERS
 from guis import TUI
 from benchmarking import Benchmarker, Plotter
 
@@ -11,6 +11,10 @@ from benchmarking import Benchmarker, Plotter
 from contextlib import nullcontext
 from threading import Thread
 import math
+
+# HANDS: 0 = left, 1 = right
+ENABLED_HANDS_TRACKING = [1, 2]
+ENABLED_HANDS_HAPTIC = [1]
 
 def closure_to_angle(closure):
     # dumb calc: between 0 and 0.4 we are proportional to 0 and 40°
@@ -20,7 +24,7 @@ def closure_to_angle(closure):
 def simulation(engine: Engine,
                 weart: WeartConnector | None,
                 visualizer: Visualizer,
-                hand: HandPoseProvider | None,
+                hand_provider: HandPoseProvider | None,
                 gui: GUI):
     print("Starting simulation.")
     engine.start_simulation()
@@ -57,10 +61,11 @@ def simulation(engine: Engine,
                     engine.move_finger(angle)
                     perf_bench.mark("Hand movements")
 
-                if hand is not None:
-                    hand_pose = hand.get_hand_pose(0)
-                    if hand_pose is not None:
-                        engine.move_hand(0, *hand_pose)
+                if hand_provider is not None:
+                    for hand in ENABLED_HANDS_TRACKING:
+                        hand_pose = hand_provider.get_hand_pose(hand)
+                        if hand_pose is not None:
+                            engine.move_hand(hand, *hand_pose)
 
                 engine.step_simulation(frame_duration)
                 perf_bench.mark("Step simulation")
@@ -68,13 +73,15 @@ def simulation(engine: Engine,
                 visualizer.render_frame()
                 # perf_bench.mark("Render")
 
-                force = engine.get_contact_force()
-                # perf_bench.mark("Contact force")
-                force_plot.plot(force, "Force")
+                for hand in ENABLED_HANDS_HAPTIC:
+                    for finger in HAPTIC_FINGERS:
+                        force = engine.get_contact_force(hand, finger)
+                        # perf_bench.mark("Contact force")
+                        force_plot.plot(force, f"{finger} hand {hand}")
 
-                if weart is not None:
-                    weart.apply_force(force)
-                    perf_bench.mark("Apply force to finger")
+                        if weart is not None:
+                            weart.apply_force(hand, finger, force)
+                            # perf_bench.mark("Apply force to finger")
 
                 force_plot.end_iteration()
                 perf_bench.end_iteration()
@@ -107,7 +114,7 @@ def simulation(engine: Engine,
 
 if __name__ == "__main__":
     used_engine = "mujoco"
-    used_viz = "openxr"
+    used_viz = "simple"
     use_weart = False
     used_gui = "tui"
     # scene_path = "assets/MuJoCo scene.xml"

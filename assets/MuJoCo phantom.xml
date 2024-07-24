@@ -109,10 +109,17 @@
     <equality>
         <weld body1="right_hand_mocap" body2="right_hand_collision"
             solref="0.01 1" solimp=".9 .9 0.01" />
+        <weld body1="left_hand_mocap" body2="left_hand_collision"
+            solref="0.01 1" solimp=".9 .9 0.01" />
     </equality>
 
     <sensor>
-        <touch site="fingertip" name="fingertip_sensor" />
+        <touch site="right_fingertip_thumb" name="right_fingertip_thumb" />
+        <touch site="right_fingertip_index" name="right_fingertip_index" />
+        <touch site="right_fingertip_middle" name="right_fingertip_middle" />
+        <touch site="left_fingertip_thumb" name="left_fingertip_thumb" />
+        <touch site="left_fingertip_index" name="left_fingertip_index" />
+        <touch site="left_fingertip_middle" name="left_fingertip_middle" />
     </sensor>
 
     <worldbody>
@@ -129,37 +136,80 @@
             </body>
             <body name="right_hand_collision" pos="0 -0.03 0" euler="180 0 0">
                 <freejoint />
-                <site name="fingertip" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
-                <geom name="thumb_1_visual" class="collision" material="thumb_1"
+                <site name="right_fingertip_thumb" type="sphere" pos="-0.04 0.046 -0.003" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                <site name="right_fingertip_index" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                <site name="right_fingertip_middle" type="sphere" pos="-0.017 0.003 0.065" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                <geom name="right_thumb_1_visual" class="collision" material="thumb_1"
                     mesh="thumb_1_visual" />
-                <geom name="thumb_2_visual" class="collision" material="thumb_2"
+                <geom name="right_thumb_2_visual" class="collision" material="thumb_2"
                     mesh="thumb_2_visual" />
-                <geom name="index_1_visual" class="collision" material="index_1"
+                <geom name="right_index_1_visual" class="collision" material="index_1"
                     mesh="index_1_visual" />
-                <geom name="index_2_visual" class="collision" material="index_2"
+                <geom name="right_index_2_visual" class="collision" material="index_2"
                     mesh="index_2_visual" />
-                <geom name="index_3_visual" class="collision" material="index_3"
+                <geom name="right_index_3_visual" class="collision" material="index_3"
                     mesh="index_3_visual" />
-                <geom name="middle_1_visual" class="collision" material="middle_1"
+                <geom name="right_middle_1_visual" class="collision" material="middle_1"
                     mesh="middle_1_visual" />
-                <geom name="middle_2_visual" class="collision" material="middle_2"
+                <geom name="right_middle_2_visual" class="collision" material="middle_2"
                     mesh="middle_2_visual" />
-                <geom name="middle_3_visual" class="collision" material="middle_3"
+                <geom name="right_middle_3_visual" class="collision" material="middle_3"
                     mesh="middle_3_visual" />
-                <geom name="annular_1_visual" class="collision" material="annular_1"
+                <geom name="right_annular_1_visual" class="collision" material="annular_1"
                     mesh="annular_1_visual" />
-                <geom name="annular_2_visual" class="collision" material="annular_2"
+                <geom name="right_annular_2_visual" class="collision" material="annular_2"
                     mesh="annular_2_visual" />
-                <geom name="annular_3_visual" class="collision" material="annular_3"
+                <geom name="right_annular_3_visual" class="collision" material="annular_3"
                     mesh="annular_3_visual" />
-                <geom name="pinky_1_visual" class="collision" material="pinky_1"
+                <geom name="right_pinky_1_visual" class="collision" material="pinky_1"
                     mesh="pinky_1_visual" />
-                <geom name="pinky_2_visual" class="collision" material="pinky_2"
+                <geom name="right_pinky_2_visual" class="collision" material="pinky_2"
                     mesh="pinky_2_visual" />
-                <geom name="pinky_3_visual" class="collision" material="pinky_3"
+                <geom name="right_pinky_3_visual" class="collision" material="pinky_3"
                     mesh="pinky_3_visual" />
-                <geom name="wrist_visual" class="visual" material="wrist" mesh="wrist_visual" />
-                <geom name="palm_visual" class="collision" material="palm" mesh="palm_visual" />
+                <geom name="right_wrist_visual" class="visual" material="wrist" mesh="wrist_visual" />
+                <geom name="right_palm_visual" class="collision" material="palm" mesh="palm_visual" />
+            </body>
+        </frame>
+        <frame name="left_hand_frame" pos="-0.3 0 1">
+            <body name="left_hand_mocap" mocap="true">
+                <!-- <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .2" class="visual" /> -->
+            </body>
+            <body name="left_hand_collision" pos="0 -0.03 0" euler="180 0 0">
+                <freejoint />
+                <site name="left_fingertip_thumb" type="sphere" pos="-0.04 0.046 -0.003" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                <site name="left_fingertip_index" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                <site name="left_fingertip_middle" type="sphere" pos="-0.017 0.003 0.065" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                <geom name="left_thumb_1_visual" class="collision" material="thumb_1"
+                    mesh="thumb_1_visual" />
+                <geom name="left_thumb_2_visual" class="collision" material="thumb_2"
+                    mesh="thumb_2_visual" />
+                <geom name="left_index_1_visual" class="collision" material="index_1"
+                    mesh="index_1_visual" />
+                <geom name="left_index_2_visual" class="collision" material="index_2"
+                    mesh="index_2_visual" />
+                <geom name="left_index_3_visual" class="collision" material="index_3"
+                    mesh="index_3_visual" />
+                <geom name="left_middle_1_visual" class="collision" material="middle_1"
+                    mesh="middle_1_visual" />
+                <geom name="left_middle_2_visual" class="collision" material="middle_2"
+                    mesh="middle_2_visual" />
+                <geom name="left_middle_3_visual" class="collision" material="middle_3"
+                    mesh="middle_3_visual" />
+                <geom name="left_annular_1_visual" class="collision" material="annular_1"
+                    mesh="annular_1_visual" />
+                <geom name="left_annular_2_visual" class="collision" material="annular_2"
+                    mesh="annular_2_visual" />
+                <geom name="left_annular_3_visual" class="collision" material="annular_3"
+                    mesh="annular_3_visual" />
+                <geom name="left_pinky_1_visual" class="collision" material="pinky_1"
+                    mesh="pinky_1_visual" />
+                <geom name="left_pinky_2_visual" class="collision" material="pinky_2"
+                    mesh="pinky_2_visual" />
+                <geom name="left_pinky_3_visual" class="collision" material="pinky_3"
+                    mesh="pinky_3_visual" />
+                <geom name="left_wrist_visual" class="visual" material="wrist" mesh="wrist_visual" />
+                <geom name="left_palm_visual" class="collision" material="palm" mesh="palm_visual" />
             </body>
         </frame>
 

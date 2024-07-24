@@ -11,10 +11,21 @@ class Engine:
             angle (float): new angle of the finger, in radians
         """
         pass
-    def move_hand(self, hand_id: int, position: list[int], rotation: list[int]):
+    def move_hand(self, hand_id: int, position: list[float], rotation: list[float]):
+        """Move the virtual hand in the simulation
+
+        Args:
+            hand_id (int): hand_id (int): 0 = left hand, 1 = right hand
+            position (list[float]): cartesian position of the hand
+            rotation (list[float]): orientation quaternion of the hand
+        """
         pass
-    def get_contact_force(self) -> float:
+    def get_contact_force(self, hand_id: int, finger: str) -> float:
         """Get the force the finger should feel in contact with the environment
+
+        Args:
+            hand_id (int): 0 = left hand, 1 = right hand
+            finger (str): thumb, index, middle, annular or pinky
 
         Returns:
             float: a value between 0 and 1
