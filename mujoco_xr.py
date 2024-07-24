@@ -254,7 +254,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             interaction_profile=xr.string_to_path(self._xr_instance, "/interaction_profiles/khr/simple_controller"),
             suggested_bindings=[xr.ActionSuggestedBinding(
                 action=action,
-                binding=xr.string_to_path(self._xr_instance, "/user/hand/{side}/input/grip/pose")
+                binding=xr.string_to_path(self._xr_instance, f"/user/hand/{side}/input/grip/pose")
             ) for side in ["left", "right"]]
         ))
         self._action_spaces = [xr.create_action_space(self._xr_session, xr.ActionSpaceCreateInfo(

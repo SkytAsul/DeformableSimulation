@@ -13,27 +13,10 @@ class MujocoConnector(Engine):
         """
         self.model = mj.MjModel.from_xml_path(xml_path)
         self.data = mj.MjData(self.model)
-        self._fetch_finger()
         self._fetch_hands()
-
-    def _fetch_finger(self):
-        finger = self.model.body("finger")
-        finger_geom = self.model.geom(finger.geomadr)
-        self._finger_id = finger.mocapid[0]
-        self._finger_base_pos = finger.pos
-        self._finger_axis_point = finger.pos.copy()
-        self._finger_axis_point[1] -= finger_geom.size[1]
 
     def _fetch_hands(self):
         self._hand_mocaps = [self.model.body(f"{side}_hand_mocap").mocapid[0] for side in ["left", "right"]]
-
-    def move_finger(self, angle : float):
-        rot = np.array([.0, .0, .0, .0])
-        mj.mju_euler2Quat(rot, [-angle, 0, 0], "xyz")
-        
-        mj.mju_euler2Quat(self.data.mocap_quat[self._finger_id], [math.pi/2 - angle, 0, 0], "xyz")
-        mj.mju_rotVecQuat(self.data.mocap_pos[self._finger_id], self._finger_base_pos - self._finger_axis_point, rot)
-        self.data.mocap_pos[self._finger_id] += self._finger_axis_point
     
     def move_hand(self, hand_id: int, position: list[float], rotation: list[float]):
         self.data.mocap_pos[self._hand_mocaps[hand_id]] = position
@@ -68,9 +51,8 @@ class MujocoSimpleVisualizer(Visualizer):
         self._viewer = mj_viewer.launch_passive(self._mujoco.model, self._mujoco.data,
                                                 show_left_ui=False, show_right_ui=False)
         self._viewer.cam.azimuth = 138
-        self._viewer.cam.distance = 0.5
+        self._viewer.cam.distance = 3
         self._viewer.cam.elevation = -16
-        self._viewer.cam.lookat = self._mujoco._finger_base_pos.copy()
 
     def render_frame(self):
         self._viewer.sync()

@@ -13,13 +13,8 @@ from threading import Thread
 import math
 
 # HANDS: 0 = left, 1 = right
-ENABLED_HANDS_TRACKING = [1, 2]
-ENABLED_HANDS_HAPTIC = [1]
-
-def closure_to_angle(closure):
-    # dumb calc: between 0 and 0.4 we are proportional to 0 and 40°
-    degree = closure * 100 if closure < 0.4 else 40
-    return math.radians(degree)
+ENABLED_HANDS_TRACKING = [0, 1]
+ENABLED_HANDS_HAPTIC = [0, 1]
 
 def simulation(engine: Engine,
                 weart: WeartConnector | None,
@@ -55,11 +50,6 @@ def simulation(engine: Engine,
                     continue
                 perf_bench.new_iteration()
                 force_plot.new_iteration()
-
-                if weart is not None:
-                    angle = closure_to_angle(weart.get_index_closure())
-                    engine.move_finger(angle)
-                    perf_bench.mark("Hand movements")
 
                 if hand_provider is not None:
                     for hand in ENABLED_HANDS_TRACKING:
@@ -142,7 +132,7 @@ if __name__ == "__main__":
             visualizer_ctx = nullcontext(MujocoSimpleVisualizer(mujoco))
         case "openxr":
             print("Loading Virtual Reality...")
-            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=False, samples=8, fps_counter=False)
+            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=True, samples=8, fps_counter=False)
         case _:
             raise RuntimeError("Invalid visualizer name")
 
