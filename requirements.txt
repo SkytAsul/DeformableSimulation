@@ -1,7 +1,7 @@
 coppeliasim_zmqremoteapi_client==2.0.4
 matplotlib==3.8.2
 pynput==1.7.7
-weartsdk-sky==1.0.3
+weartsdk-sky>=1.0.4
 pyopenxr==1.1.3601
-mujoco==3.1.6
+mujoco==3.2.0
 colorama>=0.4.6

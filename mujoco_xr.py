@@ -283,6 +283,8 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         # We do NOT want to call mjv_defaultFreeCamera
 
         mujoco.mjv_defaultOption(self._mj_option)
+
+        self._mj_camera_offset = numpy.zeros(3)
     
     def _update_mujoco(self):
         """
@@ -370,7 +372,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             self._xr_projection_layer.views[eye_index].pose = view_state.pose
 
             cam = self._mj_scene.camera[eye_index]
-            cam.pos = list(view_state.pose.position)
+            cam.pos = self._mj_camera_offset + list(view_state.pose.position)
             cam.frustum_near = FRUSTUM_NEAR
             cam.frustum_far = FRUSTUM_FAR
             cam.frustum_bottom = numpy.tan(view_state.fov.angle_down) * FRUSTUM_NEAR
@@ -617,6 +619,9 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
     def add_perf_counters(self, *benchmarkers: Benchmarker):
         if self._benchmarkers is not None:
             self._benchmarkers += benchmarkers
+    
+    def offset_origin(self, position: list[float]):
+        self._mj_camera_offset = position
 
 @staticmethod
 def quat_xr2mj(xr_quat):

@@ -57,6 +57,13 @@ class Visualizer:
         return False
     def stop_visualization(self):
         pass
+    def offset_origin(self, position: list[float]):
+        """Offsets the origin position of the visualization.
+
+        Args:
+            position (list[float]): a list of 3 floats describing the new offset (overrides the previous one)
+        """
+        pass
 
 class HandPoseProvider:
     """Represents an object that can provide the position of hands in real-time.
@@ -76,7 +83,7 @@ class HandPoseProvider:
 class GUI:
     """Represents a way for the user to interact with the simulation.
     """
-    def start_gui(self, engine: Engine):
+    def start_gui(self, engine: Engine, visualizer: Visualizer):
         pass
     def should_exit(self) -> bool:
         return False
