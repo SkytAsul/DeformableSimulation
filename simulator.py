@@ -11,11 +11,6 @@ from contextlib import nullcontext
 from threading import Thread
 import math
 
-def closure_to_angle(closure):
-    # dumb calc: between 0 and 0.4 we are proportional to 0 and 40°
-    degree = closure * 100 if closure < 0.4 else 40
-    return math.radians(degree)
-
 def simulation(engine: Engine,
                 weart: WeartConnector | None,
                 visualizer: Visualizer,
@@ -37,6 +32,7 @@ def simulation(engine: Engine,
 
         print("Done! Everything is up and running.\n")
         try:
+            engine.init_task()
             while not visualizer.should_exit():
                 frame_bench.new_iteration()
                 frame_continue, frame_duration = visualizer.wait_frame()
@@ -49,9 +45,13 @@ def simulation(engine: Engine,
                 perf_bench.new_iteration()
                 force_plot.new_iteration()
 
-                if weart is not None:
-                    angle = closure_to_angle(weart.get_index_closure())
-                    engine.move_finger(angle)
+                if weart is not None and isinstance(engine, MujocoConnector):
+                    dr_middle = engine.mapping(weart.get_middle_closure(), "middle")
+                    dr_index = engine.mapping(weart.get_index_closure(), "index")
+                    dr_thumb = engine.mapping(weart.get_thumb_closure(), "thumb")
+                    engine.actuation("index", dr_index)
+                    engine.actuation("middle", dr_middle)
+                    engine.actuation("thumb", dr_thumb)
                     perf_bench.mark("Hand movements")
 
                 if hand is not None:
@@ -65,13 +65,13 @@ def simulation(engine: Engine,
                 visualizer.render_frame()
                 # perf_bench.mark("Render")
 
-                force = engine.get_contact_force()
-                # perf_bench.mark("Contact force")
-                force_plot.plot(force, "Force")
+                # force = engine.get_contact_force()
+                # # perf_bench.mark("Contact force")
+                # force_plot.plot(force, "Force")
 
-                if weart is not None:
-                    weart.apply_force(force)
-                    perf_bench.mark("Apply force to finger")
+                # if weart is not None:
+                #     weart.apply_force(force)
+                #     perf_bench.mark("Apply force to finger")
 
                 force_plot.end_iteration()
                 perf_bench.end_iteration()
@@ -104,11 +104,12 @@ def simulation(engine: Engine,
 
 if __name__ == "__main__":
     used_engine = "mujoco"
-    used_viz = "openxr"
+    used_viz = "simple"
     use_weart = True
     # scene_path = "assets/MuJoCo scene simple.xml"
     # scene_path = "assets/balloons.xml"
-    scene_path = "assets/MuJoCo phantom.xml"
+    # scene_path = "assets/MuJoCo phantom.xml"
+    scene_path = "assets/MuJoCo phantom and hand.xml"
 
     print("Starting script...\n")
 
@@ -131,7 +132,7 @@ if __name__ == "__main__":
             visualizer_ctx = nullcontext(MujocoSimpleVisualizer(mujoco))
         case "openxr":
             print("Loading Virtual Reality...")
-            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=False, samples=8, fps_counter=False)
+            visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=True, samples=8, fps_counter=False)
         case _:
             raise RuntimeError("Invalid visualizer name")
 

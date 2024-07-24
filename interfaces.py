@@ -1,11 +1,4 @@
 class Engine:
-    def move_finger(self, angle : float):
-        """Move the virtual finger with an angle
-
-        Args:
-            angle (float): new angle of the finger, in radians
-        """
-        pass
     def move_hand(self, hand_id: int, position: list[int], rotation: list[int]):
         pass
     def get_contact_force(self) -> float:

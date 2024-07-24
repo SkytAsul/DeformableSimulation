@@ -3,4 +3,4 @@ matplotlib==3.8.2
 pynput==1.7.7
 weartsdk-sky==1.0.3
 pyopenxr==1.1.3601
-mujoco==3.1.6
+mujoco==3.2.0
