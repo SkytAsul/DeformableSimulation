@@ -8,10 +8,10 @@ just_fix_windows_console()
 class TUI(GUI):
     RESET_KEYS = [keyboard.KeyCode.from_char('R'), keyboard.KeyCode.from_char('r')]
     MOVE_KEYS = {
-        keyboard.Key.down.char: [-1, 0, 0],
-        keyboard.Key.up.char: [1, 0, 0],
-        keyboard.Key.left.char: [0, -1, 0],
-        keyboard.Key.right.char: [0, 1, 0]
+        keyboard.Key.down: [-1, 0, 0],
+        keyboard.Key.up: [1, 0, 0],
+        keyboard.Key.left: [0, 0, -1],
+        keyboard.Key.right: [0, 0, 1]
     }
     MOVE_SCALE = 0.5
     
@@ -40,7 +40,7 @@ class TUI(GUI):
         print(Fore.WHITE)
         print(f"Press on {Style.BRIGHT}ESC{Style.NORMAL} to stop the simulation.")
         print(f"Press on {Style.BRIGHT}R{Style.NORMAL} to reset the simulation.")
-        print(f"Press on {Style.BRIGHT}←↑→↓{Style.NORMAL} to move in the scene.")
+        print(f"Press on {Style.BRIGHT}←→↑↓ arrows{Style.NORMAL} to move in the scene.")
         print(Style.RESET_ALL)
 
     def should_exit(self) -> bool:

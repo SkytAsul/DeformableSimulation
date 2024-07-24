@@ -125,7 +125,7 @@
         </body>
         <frame name="right_hand_frame" pos="-0.2 0 1">
             <body name="right_hand_mocap" mocap="true">
-                <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .2" class="visual" />
+                <!-- <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .2" class="visual" /> -->
             </body>
             <body name="right_hand_collision" pos="0 -0.03 0" euler="180 0 0">
                 <freejoint />

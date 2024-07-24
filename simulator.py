@@ -34,7 +34,7 @@ def simulation(engine: Engine,
     def loop():
         print("Starting visualization...")
         visualizer.start_visualization()
-        gui.start_gui(engine)
+        gui.start_gui(engine, visualizer)
         if isinstance(visualizer, MujocoXRVisualizer):
             visualizer.add_perf_counters(perf_bench, frame_bench)
 
@@ -107,7 +107,7 @@ def simulation(engine: Engine,
 
 if __name__ == "__main__":
     used_engine = "mujoco"
-    used_viz = "simple"
+    used_viz = "openxr"
     use_weart = False
     used_gui = "tui"
     # scene_path = "assets/MuJoCo scene.xml"
