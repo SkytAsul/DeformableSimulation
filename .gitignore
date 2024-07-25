@@ -167,3 +167,6 @@ cython_debug/
 # Specific
 /hand_script/output*
 benchmark.csv
+MUJOCO_LOG.TXT
+# symlink for real-time dev of weart sdk
+weartsdk

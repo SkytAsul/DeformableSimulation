@@ -611,7 +611,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
             
             hand_pos = numpy.zeros(3)
             hand_rot = numpy.zeros(4)
-            mujoco.mjv_room2model(hand_pos, hand_rot, list(space_location.pose.position), quat_xr2mj(space_location.pose.orientation), self._mj_scene)
+            mujoco.mjv_room2model(hand_pos, hand_rot, self._mj_camera_offset + list(space_location.pose.position), quat_xr2mj(space_location.pose.orientation), self._mj_scene)
             return hand_pos, hand_rot
         else:
             return None

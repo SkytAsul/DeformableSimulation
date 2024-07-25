@@ -15,6 +15,8 @@ class MujocoConnector(Engine):
         self.data = mj.MjData(self.model)
         self._fetch_hands()
 
+        self._should_reset = False
+
     def _fetch_hands(self):
         self._hand_mocaps = [self.model.body(f"{side}_hand_mocap").mocapid[0] for side in ["left", "right"]]
     
@@ -31,6 +33,11 @@ class MujocoConnector(Engine):
         return data[0] / 30
 
     def step_simulation(self, duration: float | None):
+        if self._should_reset:
+            mj.mj_resetData(self.model, self.data)
+            self._should_reset = False
+            mj.mju_warning("HHHHHHA")
+
         if duration is None:
             mj.mj_step(self.model, self.data)
         else:
@@ -39,7 +46,7 @@ class MujocoConnector(Engine):
                 mj.mj_step(self.model, self.data)
     
     def reset_simulation(self):
-        mj.mj_resetData(self.model, self.data)
+        self._should_reset = True
 
 class MujocoSimpleVisualizer(Visualizer):
     def __init__(self, mujoco: MujocoConnector, framerate: int | None = None):

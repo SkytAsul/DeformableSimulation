@@ -25,8 +25,16 @@ class TUI(GUI):
 
         elif key in TUI.MOVE_KEYS:
             self._offset_origin += TUI.MOVE_KEYS[key]
-            self._visualizer.offset_origin(self._offset_origin * TUI.MOVE_SCALE)
+            self._update_position()
+        
+        elif key == keyboard.Key.space:
+            self._offset_origin = np.zeros(3)
+            self._update_position()
     
+    def _update_position(self):
+        print(Fore.CYAN, "Moving to", Style.BRIGHT, self._offset_origin, Style.RESET_ALL)
+        self._visualizer.offset_origin(self._offset_origin * TUI.MOVE_SCALE)
+
     def start_gui(self, engine: Engine, visualizer: Visualizer):
         self._engine = engine
         self._visualizer = visualizer
@@ -40,7 +48,8 @@ class TUI(GUI):
         print(Fore.WHITE)
         print(f"Press on {Style.BRIGHT}ESC{Style.NORMAL} to stop the simulation.")
         print(f"Press on {Style.BRIGHT}R{Style.NORMAL} to reset the simulation.")
-        print(f"Press on {Style.BRIGHT}←→↑↓ arrows{Style.NORMAL} to move in the scene.")
+        print(f"Press on {Style.BRIGHT}the arrows ←→↑↓{Style.NORMAL} to move in the scene.")
+        print(f"Press on {Style.BRIGHT}SPACE{Style.NORMAL} to reset the position in the scene.")
         print(Style.RESET_ALL)
 
     def should_exit(self) -> bool:

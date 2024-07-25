@@ -235,7 +235,7 @@
             <!-- For some reason, the position and orientation from the parent frame is not
              accumulated in the flexcomp. The "real" position should be pos="0 .09 .15" -->
             <flexcomp name="left kidney" type="gmsh" dim="3" pos=".1 -.09 1.45" euler="0 0 180"
-                file="phantom-assets/left kidney_converted_vol.msh" scale="3 3 3">
+                file="phantom-assets/left kidney_converted_vol.msh" scale="3 3 3" material="right_kidney" >
                 <edge equality="true" />
                 <pin id="47 38 58" />
                 <contact internal="false" condim="3" solref="0.005 1" solimp=".95 .99 .0001"
