@@ -23,8 +23,6 @@ def simulation(engine: Engine,
                 tracking_hands: list[int]):
     print("Starting simulation.")
     engine.start_simulation()
-    if weart is not None:
-        weart.start_listeners()
 
     perf_bench = Benchmarker(title="Performance profiler")
     frame_bench = Benchmarker(title="Performance profiler")
@@ -106,16 +104,17 @@ if __name__ == "__main__":
     # CHANGEABLE PARAMETERS
 
     used_engine = "mujoco"
-    used_viz = "openxr"
-    use_weart = False
+    used_viz = "simple"
+    use_weart = True
     used_gui = "tui"
 
     # scene_path = "assets/MuJoCo scene.xml"
     # scene_path = "assets/balloons.xml"
     scene_path = "assets/MuJoCo phantom.xml"
 
-    tracking_hands = {"left": False, "right": True} # not complete: hand still present in MuJoCo
-    haptic_hands = {"left": False, "right": True}
+    # Actually, it seems like everything works even if not both hands are connected (WEART and Oculus)
+    tracking_hands = {"left": True, "right": True}
+    haptic_hands = {"left": True, "right": True}
 
 
     # SCRIPT
@@ -150,6 +149,7 @@ if __name__ == "__main__":
     match used_gui:
         case "tui":
             gui = TUI()
+        # TODO: add another GUI, maybe a TK window?
         case _:
             raise RuntimeError("Invalid GUI name")
 
@@ -164,10 +164,6 @@ if __name__ == "__main__":
             print(Fore.RED + Style.BRIGHT, "WARNING:", Style.NORMAL + "You have not enabled WEART.\n", Style.RESET_ALL)
 
         with weart_ctx as weart:
-            if use_weart:
-                print("Connected. Calibrating, stand still...")
-
-                weart.calibrate()
-                print("Calibrated.\n")
-
+            # everything is initialized at this point
+            
             simulation(engine, weart, visualizer, hand, gui, enabled_hands_tracking, enabled_hands_haptic)
