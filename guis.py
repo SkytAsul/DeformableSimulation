@@ -20,7 +20,7 @@ class TUI(GUI):
             self._esc_pressed = True
 
         elif key in TUI.RESET_KEYS:
-            print(Fore.YELLOW, "Resetting simulation.", Fore.RESET)
+            print(f"{Fore.YELLOW}Resetting simulation.", Fore.RESET)
             self._engine.reset_simulation()
 
         elif key in TUI.MOVE_KEYS:
@@ -32,7 +32,7 @@ class TUI(GUI):
             self._update_position()
     
     def _update_position(self):
-        print(Fore.CYAN, "Moving to", Style.BRIGHT, self._offset_origin, Style.RESET_ALL)
+        print(f"{Fore.CYAN}Moving to{Style.BRIGHT}", self._offset_origin, Style.RESET_ALL)
         self._visualizer.offset_origin(self._offset_origin * TUI.MOVE_SCALE)
 
     def start_gui(self, engine: Engine, visualizer: Visualizer):

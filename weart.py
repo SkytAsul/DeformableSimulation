@@ -15,11 +15,11 @@ class Finger:
     thimble_tracking: WeArtThimbleTrackingObject
 
 class WeartConnector(object):
-    def __init__(self, ip_address = WeArtCommon.DEFAULT_IP_ADDRESS, port = WeArtCommon.DEFAULT_TCP_PORT):
+    def __init__(self, enabled_hands: list[int], ip_address = WeArtCommon.DEFAULT_IP_ADDRESS, port = WeArtCommon.DEFAULT_TCP_PORT):
         self._client = WeArtClient(ip_address, port, log_level=logging.INFO)
 
         self._fingers: dict[str, Finger] = {}
-        for hand in [0, 1]:
+        for hand in enabled_hands:
             hand_side = HandSide.Left.value if hand == 0 else HandSide.Right.value
             for finger in HAPTIC_FINGERS:
                 match finger:

@@ -36,7 +36,6 @@ class MujocoConnector(Engine):
         if self._should_reset:
             mj.mj_resetData(self.model, self.data)
             self._should_reset = False
-            mj.mju_warning("HHHHHHA")
 
         if duration is None:
             mj.mj_step(self.model, self.data)

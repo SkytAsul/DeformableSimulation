@@ -170,7 +170,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         if not self._mirror_window:
             glfw.window_hint(glfw.VISIBLE, False)
         self._window_size = [self._width // 2, self._height // 2]
-        self._window = glfw.create_window(*self._window_size, APP_NAME, None, None)
+        self._window = glfw.create_window(*self._window_size, APP_NAME + " loading...", None, None)
         if self._window is None:
             raise RuntimeError("Failed to create GLFW window")
         glfw.make_context_current(self._window)
@@ -570,6 +570,9 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._event_not_rendering.set()
 
     def start_visualization(self):
+        if self._mirror_window:
+            glfw.set_window_title(self._window, APP_NAME)
+
         self._render_running = True
         self._render_semaphore = threading.Semaphore(0)
         self._render_thread = threading.Thread(target=self._render_loop, name="OpenXR rendering")

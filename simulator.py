@@ -10,17 +10,17 @@ from benchmarking import Benchmarker, Plotter
 # libraries
 from contextlib import nullcontext
 from threading import Thread
-import math
+from colorama import just_fix_windows_console, Fore, Style
 
-# HANDS: 0 = left, 1 = right
-ENABLED_HANDS_TRACKING = [0, 1]
-ENABLED_HANDS_HAPTIC = [0, 1]
+just_fix_windows_console()
 
 def simulation(engine: Engine,
                 weart: WeartConnector | None,
                 visualizer: Visualizer,
                 hand_provider: HandPoseProvider | None,
-                gui: GUI):
+                gui: GUI,
+                haptic_hands: list[int],
+                tracking_hands: list[int]):
     print("Starting simulation.")
     engine.start_simulation()
     if weart is not None:
@@ -37,7 +37,7 @@ def simulation(engine: Engine,
         if isinstance(visualizer, MujocoXRVisualizer):
             visualizer.add_perf_counters(perf_bench, frame_bench)
 
-        print("Done! Everything is up and running.\n")
+        print(Style.BRIGHT + Fore.GREEN, f"Done!{Style.NORMAL} Everything is up and running.{Fore.RESET}\n")
         try:
             while not visualizer.should_exit() and not gui.should_exit():
                 frame_bench.new_iteration()
@@ -52,7 +52,7 @@ def simulation(engine: Engine,
                 force_plot.new_iteration()
 
                 if hand_provider is not None:
-                    for hand in ENABLED_HANDS_TRACKING:
+                    for hand in tracking_hands:
                         hand_pose = hand_provider.get_hand_pose(hand)
                         if hand_pose is not None:
                             engine.move_hand(hand, *hand_pose)
@@ -63,7 +63,7 @@ def simulation(engine: Engine,
                 visualizer.render_frame()
                 # perf_bench.mark("Render")
 
-                for hand in ENABLED_HANDS_HAPTIC:
+                for hand in haptic_hands:
                     for finger in HAPTIC_FINGERS:
                         force = engine.get_contact_force(hand, finger)
                         # perf_bench.mark("Contact force")
@@ -82,14 +82,14 @@ def simulation(engine: Engine,
             perf_bench.stop()
             #perf_bench.export_csv("benchmark.csv", include_time=True)
 
-            print("Stopping visualization...")
+            print("\nStopping visualization...")
             gui.stop_gui()
             visualizer.stop_visualization()
 
             print("Stopping simulation...")
             engine.stop_simulation()
 
-            print("Ciao!")
+            print("\nCiao!\n")
 
     threaded = False
     if threaded:
@@ -103,15 +103,26 @@ def simulation(engine: Engine,
         loop()
 
 if __name__ == "__main__":
+    # CHANGEABLE PARAMETERS
+
     used_engine = "mujoco"
-    used_viz = "simple"
+    used_viz = "openxr"
     use_weart = False
     used_gui = "tui"
+
     # scene_path = "assets/MuJoCo scene.xml"
     # scene_path = "assets/balloons.xml"
     scene_path = "assets/MuJoCo phantom.xml"
 
+    tracking_hands = {"left": False, "right": True} # not complete: hand still present in MuJoCo
+    haptic_hands = {"left": False, "right": True}
+
+
+    # SCRIPT
     print("Starting script...\n")
+
+    enabled_hands_tracking = [i for i, (side, enabled) in enumerate(tracking_hands.items()) if enabled]
+    enabled_hands_haptic = [i for i, (side, enabled) in enumerate(haptic_hands.items()) if enabled]
 
     engine = visualizer = weart = hand = gui = None
 
@@ -147,16 +158,16 @@ if __name__ == "__main__":
 
         if use_weart:
             print("Connecting to WEART...")
-            weart_ctx = WeartConnector()
+            weart_ctx = WeartConnector(enabled_hands_haptic)
         else:
             weart_ctx = nullcontext()
+            print(Fore.RED + Style.BRIGHT, "WARNING:", Style.NORMAL + "You have not enabled WEART.\n", Style.RESET_ALL)
 
         with weart_ctx as weart:
-            
             if use_weart:
                 print("Connected. Calibrating, stand still...")
 
                 weart.calibrate()
                 print("Calibrated.\n")
 
-            simulation(engine, weart, visualizer, hand, gui)
+            simulation(engine, weart, visualizer, hand, gui, enabled_hands_tracking, enabled_hands_haptic)
