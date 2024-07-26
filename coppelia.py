@@ -29,9 +29,11 @@ class CoppeliaConnector(Engine):
         _, _, finger_dim = self.sim.getShapeGeomInfo(self.finger_handle)
         self._finger_length = finger_dim[2]
 
-    def move_finger(self, angle):
-        new_pos = self.sim.rotateAroundAxis(self._finger_base_pos, (1, 0, 0), (self._finger_base_pos[0], self._finger_base_pos[1] + self._finger_length, self._finger_base_pos[2]), angle)
-        self.sim.setObjectPose(self.finger_handle, new_pos)
+    def move_finger(self, hand_id: int, finger: str, closure: float):
+        if hand_id == 1 and finger == "index":
+            angle = closure * 100 if closure < 0.4 else 40
+            new_pos = self.sim.rotateAroundAxis(self._finger_base_pos, (1, 0, 0), (self._finger_base_pos[0], self._finger_base_pos[1] + self._finger_length, self._finger_base_pos[2]), angle)
+            self.sim.setObjectPose(self.finger_handle, new_pos)
 
     def get_contact_force(self, hand_id: int, finger: str):
         return self._force_calculator.compute()

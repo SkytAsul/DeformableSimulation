@@ -6,6 +6,7 @@ from mujoco_xr import MujocoXRVisualizer
 from weart import WeartConnector, HAPTIC_FINGERS
 from guis import TUI
 from benchmarking import Benchmarker, Plotter
+from hand import Hand
 
 # libraries
 from contextlib import nullcontext
@@ -19,8 +20,7 @@ def simulation(engine: Engine,
                 visualizer: Visualizer,
                 hand_provider: HandPoseProvider | None,
                 gui: GUI,
-                haptic_hands: list[int],
-                tracking_hands: list[int]):
+                hands: tuple[Hand, Hand]):
     print("Starting simulation.")
     engine.start_simulation()
 
@@ -50,10 +50,16 @@ def simulation(engine: Engine,
                 force_plot.new_iteration()
 
                 if hand_provider is not None:
-                    for hand in tracking_hands:
-                        hand_pose = hand_provider.get_hand_pose(hand)
+                    for hand in filter(lambda h: h.tracking, hands):
+                        hand_pose = hand_provider.get_hand_pose(hand.id)
                         if hand_pose is not None:
-                            engine.move_hand(hand, *hand_pose)
+                            engine.move_hand(hand.id, *hand_pose)
+
+                if weart is not None:
+                    for hand in filter(lambda h: h.haptics, hands):
+                        for finger in HAPTIC_FINGERS:
+                            closure = weart.get_finger_closure(hand.id, finger)
+                            engine.move_finger(hand.id, finger, closure)
 
                 engine.step_simulation(frame_duration)
                 perf_bench.mark("Step simulation")
@@ -61,14 +67,14 @@ def simulation(engine: Engine,
                 visualizer.render_frame()
                 # perf_bench.mark("Render")
 
-                for hand in haptic_hands:
+                for hand in filter(lambda h: h.haptics, hands):
                     for finger in HAPTIC_FINGERS:
-                        force = engine.get_contact_force(hand, finger)
+                        force = engine.get_contact_force(hand.id, finger)
                         # perf_bench.mark("Contact force")
                         force_plot.plot(force, f"{finger} hand {hand}")
 
                         if weart is not None:
-                            weart.apply_force(hand, finger, force)
+                            weart.apply_force(hand.id, finger, force)
                             # perf_bench.mark("Apply force to finger")
 
                 force_plot.end_iteration()
@@ -103,47 +109,50 @@ def simulation(engine: Engine,
 if __name__ == "__main__":
     # CHANGEABLE PARAMETERS
 
-    used_engine = "mujoco"
+    used_engine = "coppelia"
     used_viz = "simple"
-    use_weart = True
+    use_weart = False
     used_gui = "tui"
 
     # scene_path = "assets/MuJoCo scene.xml"
     # scene_path = "assets/balloons.xml"
     scene_path = "assets/MuJoCo phantom.xml"
 
-    # Actually, it seems like everything works even if not both hands are connected (WEART and Oculus)
-    tracking_hands = {"left": True, "right": True}
-    haptic_hands = {"left": True, "right": True}
-
+    # It seems like we can keep tracking and haptics enabled
+    # even if not both hands are connected (WEART and Oculus).
+    # Disabling tracking and haptics for an unused world is
+    # still useful as it hides the hand in MuJoCo. 
+    hands = (
+        Hand(id = 0, side = "left", tracking = True, haptics = True, controller_rotation=0),
+        Hand(id = 1, side = "right", tracking = True, haptics = True, controller_rotation=90)
+    )
 
     # SCRIPT
     print("Starting script...\n")
 
-    enabled_hands_tracking = [i for i, (side, enabled) in enumerate(tracking_hands.items()) if enabled]
-    enabled_hands_haptic = [i for i, (side, enabled) in enumerate(haptic_hands.items()) if enabled]
-
-    engine = visualizer = weart = hand = gui = None
+    engine = mujoco = visualizer = weart = hand = gui = None
 
     match used_engine:
         case "mujoco":
             print("Loading MuJoCo...")
-            engine = mujoco = MujocoConnector(scene_path)
+            engine = mujoco = MujocoConnector(scene_path, hands)
             print("Loaded.\n")
         case "coppelia":
-            print("Connecting to Coppelia...")
+            print("Connecting to CoppeliaSim...")
             engine = CoppeliaConnector()
             print("Connected.\n")
-
-            # Warning! Coppelia not working for now as it does not integrate a visualizer.
-            # TODO: make visualizer optional.
+            used_viz = None
         case _:
             raise RuntimeError("Invalid engine name")
 
     match used_viz:
+        case None:
+            visualizer_ctx = nullcontext(Visualizer())
         case "simple":
+            assert mujoco is not None
             visualizer_ctx = nullcontext(MujocoSimpleVisualizer(mujoco))
         case "openxr":
+            assert mujoco is not None
             print("Loading Virtual Reality...")
             visualizer_ctx = hand = MujocoXRVisualizer(mujoco, mirror_window=True, samples=8, fps_counter=False)
         case _:
@@ -161,6 +170,7 @@ if __name__ == "__main__":
 
         if use_weart:
             print("Connecting to WEART...")
+            enabled_hands_haptic = [hand.id for hand in hands if hand.haptics]
             weart_ctx = WeartConnector(enabled_hands_haptic)
         else:
             weart_ctx = nullcontext()
@@ -169,4 +179,4 @@ if __name__ == "__main__":
         with weart_ctx as weart:
             # everything is initialized at this point
             
-            simulation(engine, weart, visualizer, hand, gui, enabled_hands_tracking, enabled_hands_haptic)
+            simulation(engine, weart, visualizer, hand, gui, hands)

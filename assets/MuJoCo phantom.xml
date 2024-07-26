@@ -2,6 +2,8 @@
     <size memory="1G" />
     <statistic extent="1.5" meansize=".05" />
 
+    <compiler angle="degree"/>
+
     <option solver="CG" tolerance="1e-6" timestep=".0014" integrator="implicitfast" jacobian="sparse">
         <!-- The timestep is adjusted so the flexcomp does not explode as soon as the simulation start.
          It is better to have the largest value possible to reduce the time it takes for the simulation
@@ -107,9 +109,9 @@
     </asset>
 
     <equality>
-        <weld body1="right_hand_mocap" body2="right_hand_collision"
+        <weld body1="right_hand_mocap" body2="right_hand"
             solref="0.01 1" solimp=".9 .9 0.01" />
-        <weld body1="left_hand_mocap" body2="left_hand_collision"
+        <weld body1="left_hand_mocap" body2="left_hand"
             solref="0.01 1" solimp=".9 .9 0.01" />
     </equality>
 
@@ -131,7 +133,7 @@
             <body name="right_hand_mocap" mocap="true">
                 <!-- <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .2" class="visual" /> -->
             </body>
-            <body name="right_hand_collision" pos="0 -0.03 0" euler="180 0 0">
+            <body name="right_hand" pos="0 -0.03 0" euler="180 0 0">
                 <freejoint />
                 <site name="right_fingertip_thumb" type="sphere" pos="-0.04 0.046 -0.003" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
                 <site name="right_fingertip_index" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
@@ -172,7 +174,7 @@
             <body name="left_hand_mocap" mocap="true">
                 <!-- <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .2" class="visual" /> -->
             </body>
-            <body name="left_hand_collision" pos="0 -0.03 0" euler="180 0 0">
+            <body name="left_hand" pos="0 -0.03 0" euler="180 0 0">
                 <freejoint />
                 <site name="left_fingertip_thumb" type="sphere" pos="-0.04 0.046 -0.003" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
                 <site name="left_fingertip_index" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />

@@ -4,18 +4,20 @@
 class Engine:
     """Represents a link to a physics engine.
     """
-    def move_finger(self, angle : float):
-        """Move the virtual finger with an angle
+    def move_finger(self, hand_id: int, finger: str, closure: float):
+        """Move one of the virtual fingers with an angle.
 
         Args:
-            angle (float): new angle of the finger, in radians
+            hand_id (int): 0 = left hand, 1 = right hand
+            finger (str): which finger to move (thumb, index, middle)
+            closure (float): closure value of the finger
         """
         pass
     def move_hand(self, hand_id: int, position: list[float], rotation: list[float]):
         """Move the virtual hand in the simulation
 
         Args:
-            hand_id (int): hand_id (int): 0 = left hand, 1 = right hand
+            hand_id (int): 0 = left hand, 1 = right hand
             position (list[float]): cartesian position of the hand
             rotation (list[float]): orientation quaternion of the hand
         """

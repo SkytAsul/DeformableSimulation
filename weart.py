@@ -70,7 +70,7 @@ class WeartConnector(object):
         for finger in self._fingers.values():
             self._client.RemoveMessageListener(finger.thimble_tracking)
 
-    def get_index_closure(self, hand_id: int, finger: str):
+    def get_finger_closure(self, hand_id: int, finger: str):
         thimble_tracking = self._fingers[WeartConnector.get_finger_id(hand_id, finger)].thimble_tracking
         return thimble_tracking.GetClosure()
     
