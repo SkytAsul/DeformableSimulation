@@ -33,14 +33,14 @@ class CoppeliaConnector(Engine):
         new_pos = self.sim.rotateAroundAxis(self._finger_base_pos, (1, 0, 0), (self._finger_base_pos[0], self._finger_base_pos[1] + self._finger_length, self._finger_base_pos[2]), angle)
         self.sim.setObjectPose(self.finger_handle, new_pos)
 
-    def get_contact_force(self):
+    def get_contact_force(self, hand_id: int, finger: str):
         return self._force_calculator.compute()
     
     def start_simulation(self):
         self.sim.setStepping(True)
         self.sim.startSimulation()
     
-    def step_simulation(self, duration: int | None):
+    def step_simulation(self, duration: float | None):
         self.sim.step()
     
     def stop_simulation(self):

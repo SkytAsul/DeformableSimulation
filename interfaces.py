@@ -30,7 +30,7 @@ class Engine:
         Returns:
             float: a value between 0 and 1
         """
-        pass
+        return 0
     def start_simulation(self):
         pass
     def step_simulation(self, duration: float | None):
@@ -79,15 +79,15 @@ class Visualizer:
 class HandPoseProvider:
     """Represents an object that can provide the position of hands in real-time.
     """
-    def get_hand_pose(self, hand_id: int) -> tuple[list[float], list[float]]:
+    def get_hand_pose(self, hand_id: int) -> tuple[list[float], list[float]] | None:
         """Retrieves the hand pose.
 
         Args:
             hand_id (int): 0 = left hand, 1 = right hand
 
         Returns:
-            tuple[list[float], list[float]]: the position (cartesian)
-                and rotation (quaternion) of the hand
+            tuple[list[float], list[float]] | None:
+                The position (cartesian) and rotation (quaternion) of the hand if present, None otherwise.
         """        
         pass
 

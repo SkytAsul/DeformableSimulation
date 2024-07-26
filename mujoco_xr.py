@@ -72,15 +72,15 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
 
             debug_messenger = xr.DebugUtilsMessengerCreateInfoEXT(
                 message_severities=
-                    xr.DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-                    | xr.DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
-                    | xr.DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-                    | xr.DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+                    xr.DebugUtilsMessageSeverityFlagsEXT.VERBOSE_BIT
+                    | xr.DebugUtilsMessageSeverityFlagsEXT.INFO_BIT
+                    | xr.DebugUtilsMessageSeverityFlagsEXT.WARNING_BIT
+                    | xr.DebugUtilsMessageSeverityFlagsEXT.ERROR_BIT,
                 message_types=
-                    xr.DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-                    | xr.DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-                    | xr.DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-                    | xr.DEBUG_UTILS_MESSAGE_TYPE_CONFORMANCE_BIT_EXT,
+                    xr.DebugUtilsMessageTypeFlagsEXT.GENERAL_BIT
+                    | xr.DebugUtilsMessageTypeFlagsEXT.VALIDATION_BIT
+                    | xr.DebugUtilsMessageTypeFlagsEXT.PERFORMANCE_BIT
+                    | xr.DebugUtilsMessageTypeFlagsEXT.CONFORMANCE_BIT,
                 user_callback=xr.PFN_xrDebugUtilsMessengerCallbackEXT(debug_callback_py)
             )
             instance_create_info.next = ctypes.cast(ctypes.pointer(debug_messenger), ctypes.c_void_p)
@@ -197,7 +197,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._xr_session = xr.create_session(
             self._xr_instance,
             xr.SessionCreateInfo(
-                0,
+                xr.SessionCreateFlags.NONE,
                 self._xr_system,
                 next=ctypes.cast(ctypes.pointer(graphics_binding), ctypes.c_void_p)
             )
@@ -205,7 +205,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._xr_session_state = xr.SessionState.IDLE
 
         self._xr_swapchain = xr.create_swapchain(self._xr_session, xr.SwapchainCreateInfo(
-            usage_flags=xr.SWAPCHAIN_USAGE_TRANSFER_DST_BIT | xr.SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | xr.SWAPCHAIN_USAGE_SAMPLED_BIT,
+            usage_flags=xr.SwapchainUsageFlags.TRANSFER_DST_BIT | xr.SwapchainUsageFlags.COLOR_ATTACHMENT_BIT | xr.SwapchainUsageFlags.SAMPLED_BIT,
             format=GL.GL_RGBA8,
             sample_count=1 if self._samples is None else self._samples,
             array_size=1,

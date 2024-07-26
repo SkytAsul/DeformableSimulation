@@ -1,5 +1,4 @@
 from enum import Enum
-from os import error
 from weartsdk import *
 from weartsdk.WeArtCommon import HandSide, ActuationPoint, MiddlewareStatus
 import time
@@ -30,7 +29,7 @@ class WeartConnector(object):
 
         self._fingers: dict[str, Finger] = {}
         for hand in enabled_hands:
-            hand_side = HandSide.Left.value if hand == 0 else HandSide.Right.value
+            hand_side = HandSide.Left if hand == 0 else HandSide.Right
             for finger in HAPTIC_FINGERS:
                 match finger:
                     case "thumb":
@@ -39,9 +38,11 @@ class WeartConnector(object):
                         actuation_point = ActuationPoint.Index
                     case "middle":
                         actuation_point = ActuationPoint.Middle
+                    case _:
+                        raise RuntimeError()
 
                 haptic_object = WeArtHapticObject(self._client)
-                haptic_object.handSideFlag = hand_side
+                haptic_object.handSideFlag = hand_side.value
                 haptic_object.actuationPointFlag = actuation_point
 
                 touch_effect = TouchEffect(WeArtTemperature(), WeArtForce(), WeArtTexture())
@@ -74,10 +75,10 @@ class WeartConnector(object):
         return thimble_tracking.GetClosure()
     
     def apply_force(self, hand_id: int, finger: str, force_value: float):
-        finger: Finger = self._fingers.get(WeartConnector.get_finger_id(hand_id, finger))
+        finger_obj = self._fingers[WeartConnector.get_finger_id(hand_id, finger)]
 
-        finger.touch_effect.Set(finger.touch_effect.getTemperature(), WeArtForce(True, force_value), finger.touch_effect.getTexture())
-        finger.haptic_object.UpdateEffects()
+        finger_obj.touch_effect.Set(finger_obj.touch_effect.getTemperature(), WeArtForce(True, force_value), finger_obj.touch_effect.getTexture())
+        finger_obj.haptic_object.UpdateEffects()
 
     @staticmethod
     def get_finger_id(hand_id: int, finger: str):

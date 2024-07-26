@@ -134,6 +134,9 @@ if __name__ == "__main__":
             print("Connecting to Coppelia...")
             engine = CoppeliaConnector()
             print("Connected.\n")
+
+            # Warning! Coppelia not working for now as it does not integrate a visualizer.
+            # TODO: make visualizer optional.
         case _:
             raise RuntimeError("Invalid engine name")
 
