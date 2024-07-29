@@ -37,6 +37,7 @@ def simulation(engine: Engine,
 
         print(Style.BRIGHT + Fore.GREEN, f"Done!{Style.NORMAL} Everything is up and running.{Fore.RESET}\n")
         try:
+            engine.init_task()
             while not visualizer.should_exit() and not gui.should_exit():
                 frame_bench.new_iteration()
                 frame_continue, frame_duration = visualizer.wait_frame()
@@ -60,6 +61,10 @@ def simulation(engine: Engine,
                         for finger in HAPTIC_FINGERS:
                             closure = weart.get_finger_closure(hand.id, finger)
                             engine.move_finger(hand.id, finger, closure)
+                            
+                            dr = engine.mapping(closure, finger)
+                            engine.actuation(finger, dr)
+
 
                 engine.step_simulation(frame_duration)
                 perf_bench.mark("Step simulation")
@@ -109,22 +114,23 @@ def simulation(engine: Engine,
 if __name__ == "__main__":
     # CHANGEABLE PARAMETERS
 
-    used_engine = "coppelia"
-    used_viz = "simple"
-    use_weart = False
+    used_engine = "mujoco"
+    used_viz = "openxr"
+    use_weart = True
     used_gui = "tui"
 
     # scene_path = "assets/MuJoCo scene.xml"
     # scene_path = "assets/balloons.xml"
-    scene_path = "assets/MuJoCo phantom.xml"
+    # scene_path = "assets/MuJoCo phantom.xml"
+    scene_path = "assets/hand.xml"
 
     # It seems like we can keep tracking and haptics enabled
     # even if not both hands are connected (WEART and Oculus).
     # Disabling tracking and haptics for an unused world is
     # still useful as it hides the hand in MuJoCo. 
     hands = (
-        Hand(id = 0, side = "left", tracking = True, haptics = True, controller_rotation=0),
-        Hand(id = 1, side = "right", tracking = True, haptics = True, controller_rotation=90)
+        Hand(id = 0, side = "left", tracking = False, haptics = False, controller_rotation=0),
+        Hand(id = 1, side = "right", tracking = True, haptics = True, controller_rotation=0)
     )
 
     # SCRIPT
