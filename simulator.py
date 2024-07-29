@@ -58,12 +58,12 @@ def simulation(engine: Engine,
 
                 if weart is not None:
                     for hand in filter(lambda h: h.haptics, hands):
-                        for finger in HAPTIC_FINGERS:
-                            closure = weart.get_finger_closure(hand.id, finger)
+                        for finger in ["thumb", "index", "middle", "annular", "pinky"]:
+                            haptic_finger = finger
+                            if finger in ["annular", "pinky"]:
+                                haptic_finger = "middle"
+                            closure = weart.get_finger_closure(hand.id, haptic_finger)
                             engine.move_finger(hand.id, finger, closure)
-                            
-                            dr = engine.mapping(closure, finger)
-                            engine.actuation(finger, dr)
 
 
                 engine.step_simulation(frame_duration)
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # CHANGEABLE PARAMETERS
 
     used_engine = "mujoco"
-    used_viz = "openxr"
+    used_viz = "simple"
     use_weart = True
     used_gui = "tui"
 

@@ -5,7 +5,7 @@ def actuation_middle(distance, q, current_pose, links_lenghts, integral, palm, R
     q1 = q[0]
     q2 = q[1]
     q3 = q[2]
-    # print(q1, q2, q3)
+    #print(q1, q2, q3)    
     dr_dot = 0
 
     offset_middle_x = links_lenghts[0]
@@ -18,7 +18,6 @@ def actuation_middle(distance, q, current_pose, links_lenghts, integral, palm, R
     L3y_middle = links_lenghts[7]
     L3z_middle = links_lenghts[8]
     
-    # print("LINKS: ",links_lenghts)
     #print(np.linalg.norm(current_pose - np.array([0, 0, 1])))
 
     py_j2 = - L1y_middle*cos(q1) - L1z_middle*sin(q1)
@@ -31,11 +30,11 @@ def actuation_middle(distance, q, current_pose, links_lenghts, integral, palm, R
     pz_tip = pz_j3 - L3y_middle*sin(q1+q2+q3) + L3z_middle*cos(q1+q2+q3)
 
 
-    pos = np.array([[0], [py_tip], [pz_tip]])  
+    pos = np.array([[0], [py_tip], [pz_tip + 0.03]])  
 
     p = R.dot(pos) + np.array([[offset_middle_x], [offset_middle_y], [offset_middle_z]])
     
-    # print("Position", p.T)
+    #print(p.T-current_pose.T)
 
     # Task Jacobian: p_dot = Jp(q)q_dot
     Jp = np.array([[0, 0, 0],
@@ -91,3 +90,44 @@ def actuation_middle(distance, q, current_pose, links_lenghts, integral, palm, R
     qdot = Jinv.dot(dr_dot + K*(dr - d) + K_i*integral) + u_vinc
 
     return qdot, integral
+
+
+def move_middle(distance,data,model,joint_ids,palm,links,R):
+    q1 = data.qpos[joint_ids['Middle_J1']]
+    q2 = data.qpos[joint_ids['Middle_J2']]
+    q3 = data.qpos[joint_ids['Middle_J3']]
+    
+    L1y_middle = links[0] 
+    L1z_middle = links[1] 
+    L2y_middle = links[2] 
+    L2z_middle = links[3] 
+    L3y_middle = links[4] 
+    L3z_middle = links[5]
+    
+    #end_effector_middle = model.site('forSensorMiddle_4.stl').id #"End-effector we wish to control.
+    current_pose_middle = data.site_xpos[model.site('forSensorMiddle_4.stl').id] #Current pose
+
+
+    offset_middle =  data.xpos[model.body('Middle_J1.stl').id] 
+    offx_middle = offset_middle[0] - palm[0]
+    offy_middle = offset_middle[1] - palm[1] 
+    offz_middle = offset_middle[2] - palm[2]
+
+    #print(offset_middle, current_pose_middle)
+    
+    #lenght links [offsety, offsetz, l1y, l1z, l2y, l2z, l3y, l3z]
+    links = [offx_middle, offy_middle, offz_middle, L1y_middle, L1z_middle, L2y_middle, L2z_middle, L3y_middle, L3z_middle]
+    
+    qdot, integral_middle = actuation_middle(distance, [q1, q2, q3], current_pose_middle, links, 0, palm, R)
+
+    v1 = qdot[0][0] 
+    v2 = qdot[1][0] 
+    v3 = qdot[2][0] 
+    #v1 = 15
+    #v2 = 15
+    #v3 = 15
+    
+    data.qvel[joint_ids['Middle_J1']] = v1
+    data.qvel[joint_ids['Middle_J2']] = v2
+    data.qvel[joint_ids['Middle_J3']] = v3
+    # print("qpos:" , data.qpos)

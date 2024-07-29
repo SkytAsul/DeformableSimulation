@@ -183,6 +183,9 @@ class WeartStatusManager(Thread):
 
         while(not calibration.getResult()):
             time.sleep(1)
+
+            if self._status == WeartSimulationStatus.STOP_TO_EXIT:
+                return
         
         self._connector._client.StopCalibration()
         self._connector._client.RemoveMessageListener(calibration)
