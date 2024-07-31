@@ -5,7 +5,7 @@
 #show: it => bubble(
   title: "Soft object in MuJoCo",
   subtitle: "Creation of a deformable object from a 3D mesh",
-  author: "Youenn LE JEUNE",
+  author: "Youenn Le Jeune",
   affiliation: "INSA Rennes / DIAG Sapienza",
   date: datetime.today().display(),
   year: none,
@@ -23,7 +23,7 @@
 #let rarr = sym.arrow
 
 
-= Prepare the 3D model
+= Prepare the 3D model #footnote[*Disclaimer:* I am not at all a profesionnal 3D modeller. What I explain here, I understood it by myself and there are probably wrong things. If a person experienced in 3D modelling encounters this paper, please do not attempt to kill me.]
 == Import the model
 To begin with, you need to have a 3D model file to use. It can be of any filetype: we will import it in Blender, which supports many 3D model filetypes.
 
@@ -128,7 +128,7 @@ The `option` tags seems to be necessary to have a stable soft simulation. The `t
 The most important thing to add is the actual declaration of the soft body. You will put it wherever you want in your bodies hierarchy, in the `<worldbody>` section:
 ```xml
 <flexcomp name="soft_body_name" pos="x y z" type="gmsh" dim="3"
-    file="file.msh" scale="1 1 1">
+    file="file_converted_vol.msh" scale="1 1 1">
   <edge equality="true"/>
   <pin id="47 38 58"/>
   <contact internal="false" solref="0.005 1" solimp=".95 .99 .0001" selfcollide="none" />
