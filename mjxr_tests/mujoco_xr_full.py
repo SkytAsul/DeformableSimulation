@@ -1,3 +1,13 @@
+"""
+Second attempt to make a standalone program which displays
+a MuJoCo scene on a VR device using openXR.
+
+This attempt is an adaptation of the gl_example from pyopenxr_examples
+but with MuJoCo used to render.
+
+https://github.com/cmbruns/pyopenxr_examples/blob/main/xr_examples/gl_example.py
+"""
+
 import ctypes
 import logging
 

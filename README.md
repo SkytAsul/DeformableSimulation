@@ -3,7 +3,18 @@ The goal of this project is to link a haptic device (the WEART TouchDIVER), a VR
 
 This project is conducted at the DIAG Robotics Laboratory of Sapienza University of Rome, under the supervision of Marilena Vendittelli.
 
-# Dependencies
+# MuJoCoXR
+During the project, a way to display MuJoCo in a VR headset has been developed.
+
+You will find the attempts in [mjxr_tests](mjxr_tests). The final, working one is [mujoco_openxr.py](mjxr_tests/mujoco_openxr.py) and is also available on [GitHub Gists](https://gist.github.com/SkytAsul/b1a48a31c4f86b65d72bc8edcb122d3f).
+
+To better understand how everything work, see [the paper I wrote](mujocoxr-paper/MuJoCoXR.pdf).
+
+# Deformable mesh tutorial
+I made a tutorial on how to convert a 3D model to a deformable material in MuJoCo. It is available [here](deformable-mesh-tuto/deformable-mesh-tuto.pdf).
+
+# Simulator
+## Dependencies
 Before installing dependencies, remember to create a Python virtual environment!
 
 - [WEART Python SDK](https://github.com/WEARTHaptics/WEART-SDK-Python)
@@ -35,24 +46,24 @@ You can install all these dependencies at once by executing this command while b
 $ pip install -r requirements.txt
 ```
 
-# How to use
-## CoppeliaSim simulation
+## How to use
+### CoppeliaSim simulation
 1. Open the [scene](<assets/CoppeliaSim scene.ttt>) in CoppeliaSim.
 1. Open the WEART Middleware and connect your TouchDIVER.
 1. Change the options in [`simulator.py`](simulator.py) so they match your setup.
 1. Launch the [`simulator.py`](simulator.py) python file.
 
-## MuJoCo simulation
+### MuJoCo simulation
 1. Open the WEART Middleware and connect your TouchDIVERs.
 1. Connect your VR device and launch the runtime program (Meta Quest Link for instance).
 1. Change the options in [`simulator.py`](simulator.py) so they match your setup.
 1. Launch the [`simulator.py`](simulator.py) python file.
 
-# Platforms
+## Platforms
 The project is currently written in pure Python code and depends on cross-platform libraries. It is therefore also cross-platform.  
 However, to use a TouchDIVER, the *WEART Middleware* must be opened and this software is Windows-only. There is fortunately a workaround in the following section.
 
-## Use on non-Windows platforms
+### Use on non-Windows platforms
 If you have a secondary computer with Windows installed, it is possible to run the simulation on a primary (Linux for example) computer:
 1. Launch CoppeliaSim on the primary computer
 1. Launch WEART Middleware on the Windows computer
@@ -64,7 +75,9 @@ If you have a secondary computer with Windows installed, it is possible to run t
         - If both computers are "hidden" from each other, for instance between two NATs, you can use a third publicly accessible machine (for instance a cloud VPS) as a relay. Setup a reverse SSH tunnel between the Windows and the relay which exposes the port 13031 to a public one, and make the Linux client connect to the relay's port.
         - `ssh -N -4 -R <relay-port>:localhost:13031 <user>@<relay address>` (the `-4` switch is necessary on Windows, see [this issue](https://github.com/PowerShell/Win32-OpenSSH/issues/1265))
 
-# MuJoCo simulation scene
+Use-case: CoppeliaSim runs *much* faster on Linux.
+
+## MuJoCo simulation scene
 You can plug any simulation scene you want. The only requirements are:
 - the hands mocap bodies must follow the names `{side}_hand_mocap`, where `{side}` is _left_ or _right_.
 - the hands "real" bodies must follow the names `{side}_hand` and their rotations must be expressed with the `euler` parameter.

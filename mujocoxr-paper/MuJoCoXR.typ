@@ -11,8 +11,8 @@
   year: none,
   class: none,
   logo: {
-    image("logo-insa.png")
-    image("logo-sapienza.png")
+    image("../assets/logo-insa.png")
+    image("../assets/logo-sapienza.png")
   }
 ) 
 #set text(lang: "en")

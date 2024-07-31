@@ -4,7 +4,7 @@ A util similar to obj2mjcf to convert a 3D hand file to a MuJoCo MJCF file.
 Unlike obj2mjcf, this util recreates a hierarchy of bodies and constructs the convex
 hulls on each subpart of the hand, thus making the constructed XML file almost ready-to-use.
 
-I dropped it before the hand because the OBJ files do not contain the necessary data to position
+I dropped it before the end because OBJ files do not contain the necessary data to position
 joints properly and set their axis. The "skeleton_loader" script was made to complete this one but
 failed, as you can read in its header.
 """

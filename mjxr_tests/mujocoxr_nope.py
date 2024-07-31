@@ -1,5 +1,9 @@
 """
-Standalone program which displays a MuJoCo scene on a VR device using openXR.
+First attempt to make a standalone program which displays
+a MuJoCo scene on a VR device using openXR.
+
+This attempt was made using ContextObject and eventually failed.
+See why in the __init__ method.
 """
 import mujoco.gl_context
 import mujoco.glfw
