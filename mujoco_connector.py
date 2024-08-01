@@ -67,8 +67,7 @@ class MujocoConnector(Engine):
             mj.mj_step(self.model, self.data)
         else:
             step_count = int(duration // self.model.opt.timestep)
-            for _ in range(step_count):
-                mj.mj_step(self.model, self.data)
+            mj.mj_step(self.model, self.data, nstep=step_count)
     
     def reset_simulation(self):
         self._should_reset = True
