@@ -8,7 +8,7 @@ import mujoco.viewer as mj_viewer
 from weart import TextureType
 
 TEXTURE_MAPPING = {
-    "left kidney": None,
+    "left kidney": TextureType.ProfiledRubberSlow,
     "liver cibrosis": TextureType.CrushedRock
 }
 

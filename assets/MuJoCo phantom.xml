@@ -133,27 +133,33 @@
             <body name="right_hand_mocap" mocap="true">
                 <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .2" class="visual" />
             </body>
-            <body name="right_hand" pos="0 -0.03 0" euler="180 0 0">
+            <body name="right_hand" pos="0 -0.03 0" euler="180 0 120">
                 <freejoint />
-                <site name="right_fingertip_thumb" type="sphere" pos="-0.04 0.046 -0.003" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
-                <site name="right_fingertip_index" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
-                <site name="right_fingertip_middle" type="sphere" pos="-0.017 0.003 0.065" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
                 <geom name="right_thumb_1_visual" class="collision" material="thumb_1"
-                    mesh="thumb_1_visual" />
-                <geom name="right_thumb_2_visual" class="collision" material="thumb_2"
+                mesh="thumb_1_visual" />
+                <body>
+                    <site name="right_fingertip_thumb" type="sphere" pos="-0.04 0.046 -0.003" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                    <geom name="right_thumb_2_visual" class="collision" material="thumb_2"
                     mesh="thumb_2_visual" />
+                </body>
                 <geom name="right_index_1_visual" class="collision" material="index_1"
-                    mesh="index_1_visual" />
+                mesh="index_1_visual" />
                 <geom name="right_index_2_visual" class="collision" material="index_2"
-                    mesh="index_2_visual" />
-                <geom name="right_index_3_visual" class="collision" material="index_3"
+                mesh="index_2_visual" />
+                <body>
+                    <site name="right_fingertip_index" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                    <geom name="right_index_3_visual" class="collision" material="index_3"
                     mesh="index_3_visual" />
+                </body>
                 <geom name="right_middle_1_visual" class="collision" material="middle_1"
-                    mesh="middle_1_visual" />
+                mesh="middle_1_visual" />
                 <geom name="right_middle_2_visual" class="collision" material="middle_2"
-                    mesh="middle_2_visual" />
-                <geom name="right_middle_3_visual" class="collision" material="middle_3"
-                    mesh="middle_3_visual" />
+                mesh="middle_2_visual" />
+                <body>
+                    <site name="right_fingertip_middle" type="sphere" pos="-0.017 0.003 0.065" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
+                    <geom name="right_middle_3_visual" class="collision" material="middle_3"
+                        mesh="middle_3_visual" />
+                </body>
                 <geom name="right_annular_1_visual" class="collision" material="annular_1"
                     mesh="annular_1_visual" />
                 <geom name="right_annular_2_visual" class="collision" material="annular_2"

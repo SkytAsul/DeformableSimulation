@@ -117,44 +117,6 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         graphics_result = xr.exception.check_result(xr.Result(graphics_result))
         if graphics_result.is_exception():
             raise graphics_result
-        
-        # prepare timing functions
-        self._xrConvertTimeToWin32PerformanceCounterKHR = ctypes.cast(
-            xr.get_instance_proc_addr(
-                self._xr_instance,
-                "xrConvertTimeToWin32PerformanceCounterKHR",
-            ),
-            xr.PFN_xrConvertTimeToWin32PerformanceCounterKHR
-        )
-        self._xrConvertWin32PerformanceCounterToTimeKHR = ctypes.cast(
-            xr.get_instance_proc_addr(
-                self._xr_instance,
-                "xrConvertWin32PerformanceCounterToTimeKHR",
-            ),
-            xr.PFN_xrConvertWin32PerformanceCounterToTimeKHR
-        )
-
-    def xrConvertTimeToWin32PerformanceCounterKHR(self, time: xr.Time) -> int:
-        perf_time = ctypes.c_longlong()
-        result = xr.check_result(self._xrConvertTimeToWin32PerformanceCounterKHR(
-            self._xr_instance,
-            time,
-            ctypes.byref(perf_time),
-        ))
-        if result.is_exception():
-            raise result
-        return perf_time.value
-
-    def xrConvertWin32PerformanceCounterToTimeKHR(self, perf_time: int) -> xr.Time:
-        time = xr.Time()
-        result = xr.check_result(self._xrConvertWin32PerformanceCounterToTimeKHR(
-            self._xr_instance,
-            ctypes.c_longlong(perf_time),
-            ctypes.byref(time),
-        ))
-        if result.is_exception():
-            raise result
-        return time
 
     def _init_window(self):
         """
@@ -315,17 +277,6 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         return False
 
     def _end_xr_frame(self):
-        # estXT = self._xr_frame_state.predicted_display_time
-        # estPC = self.xrConvertTimeToWin32PerformanceCounterKHR(estXT)
-        # curPC = time.perf_counter_ns()
-        # curXT = self.xrConvertWin32PerformanceCounterToTimeKHR(curPC).value // 100
-        # diffXT = (estXT - curXT) / 1.e9
-        # diffPC = (estPC * 100 - curPC) / 1.e9
-        # print(f"XT {diffXT} | PC {diffPC}")
-        # self._fps_bench.plot(diffPC, "Left")
-
-        # time.sleep(1 / 80. / 4) # wait 1/4 of a frame
-
         xr.end_frame(self._xr_session, xr.FrameEndInfo(
             self._xr_frame_state.predicted_display_time,
             xr.EnvironmentBlendMode.OPAQUE,
@@ -393,7 +344,7 @@ class MujocoXRVisualizer(Visualizer, HandPoseProvider):
         self._mj_scene.enabletransform = True
         self._mj_scene.rotate[0] = numpy.cos(0.25 * numpy.pi)
         self._mj_scene.rotate[1] = numpy.sin(-0.25 * numpy.pi)
-        self._mj_scene.translate[1] = -1
+        self._mj_scene.translate[1] = -2
 
     def _fetch_actions(self):
         xr.sync_actions(self._xr_session, xr.ActionsSyncInfo(active_action_sets = ctypes.pointer(xr.ActiveActionSet(
