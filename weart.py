@@ -1,6 +1,6 @@
 from enum import Enum
 from weartsdk import *
-from weartsdk.WeArtCommon import HandSide, ActuationPoint, MiddlewareStatus
+from weartsdk.WeArtCommon import HandSide, ActuationPoint, MiddlewareStatus, TextureType
 import time
 import logging
 from threading import Thread
@@ -74,10 +74,17 @@ class WeartConnector(object):
         thimble_tracking = self._fingers[WeartConnector.get_finger_id(hand_id, finger)].thimble_tracking
         return thimble_tracking.GetClosure()
     
-    def apply_force(self, hand_id: int, finger: str, force_value: float):
+    def apply_finger(self, hand_id: int, finger: str, force_value: float, texture: TextureType | None):
         finger_obj = self._fingers[WeartConnector.get_finger_id(hand_id, finger)]
 
-        finger_obj.touch_effect.Set(finger_obj.touch_effect.getTemperature(), WeArtForce(True, force_value), finger_obj.touch_effect.getTexture())
+        texture_obj = finger_obj.touch_effect.getTexture()
+        if texture is None:
+            texture_obj.active = False
+        else:
+            texture_obj.active = True
+            texture_obj.textureType = texture
+
+        finger_obj.touch_effect.Set(finger_obj.touch_effect.getTemperature(), WeArtForce(True, force_value), texture_obj)
         finger_obj.haptic_object.UpdateEffects()
 
     @staticmethod

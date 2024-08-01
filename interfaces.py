@@ -1,6 +1,8 @@
 """Contains the classes that must be implemented to have a complete simulation.
 """
 
+from weart import TextureType
+
 class Engine:
     """Represents a link to a physics engine.
     """
@@ -22,7 +24,7 @@ class Engine:
             rotation (list[float]): orientation quaternion of the hand
         """
         pass
-    def get_contact_force(self, hand_id: int, finger: str) -> float:
+    def get_contact(self, hand_id: int, finger: str) -> tuple[float, TextureType | None]:
         """Get the force the finger should feel in contact with the environment
 
         Args:
@@ -30,9 +32,10 @@ class Engine:
             finger (str): thumb, index, middle, annular or pinky
 
         Returns:
-            float: a value between 0 and 1
+            tuple[float, TextureType | None]:
+                a value between 0 and 1 for the force and an optional texture
         """
-        return 0
+        return (0, None)
     def start_simulation(self):
         pass
     def step_simulation(self, duration: float | None):

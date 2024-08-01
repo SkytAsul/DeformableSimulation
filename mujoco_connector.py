@@ -5,6 +5,13 @@ from math import radians
 import mujoco as mj
 import mujoco.viewer as mj_viewer
 
+from weart import TextureType
+
+TEXTURE_MAPPING = {
+    "left kidney": None,
+    "liver cibrosis": TextureType.CrushedRock
+}
+
 class MujocoConnector(Engine):
     def __init__(self, xml_path: str, hands: tuple[Hand, Hand]):
         """Creates the MuJoCo Connector with the MJCF at the passed path.
@@ -22,6 +29,7 @@ class MujocoConnector(Engine):
         self.data = mj.MjData(self.model)
 
         self._fetch_hands(hands)
+        self._fetch_flexes(TEXTURE_MAPPING)
 
         self._should_reset = False
 
@@ -42,6 +50,22 @@ class MujocoConnector(Engine):
     def _fetch_hands(self, hands: tuple[Hand, Hand]):
         self._hand_mocaps = [self.model.body(f"{hand.side}_hand_mocap").mocapid[0] if hand.tracking else 0 for hand in hands]
     
+    def _fetch_flexes(self, flex_textures: dict[str, TextureType]):
+        self._flex_textures = {}
+        for flex, texture in flex_textures.items():
+            flex_id = self._get_flex_id(flex)
+            if flex_id is not None:
+                self._flex_textures[flex_id] = texture
+
+    def _get_flex_id(self, flex_name: str):
+        for id, name_adr in enumerate(self.model.name_flexadr):
+            name_binary: bytes = self.model.names[name_adr:]
+            name_decoded = name_binary.decode()
+            name_decoded = name_decoded[:name_decoded.index("\0")]
+            if name_decoded == flex_name:
+                return id
+        return None
+
     def move_hand(self, hand_id: int, position: list[float], rotation: list[float]):
         self.data.mocap_pos[self._hand_mocaps[hand_id]] = position
         self.data.mocap_quat[self._hand_mocaps[hand_id]] = rotation
@@ -50,13 +74,42 @@ class MujocoConnector(Engine):
         # TODO insert finger movement here
         pass
 
-    def get_contact_force(self, hand_id: int, finger: str) -> float:
+    def get_contact(self, hand_id: int, finger: str) -> tuple[float, TextureType | None]:
         sensor_name = "left" if hand_id == 0 else "right"
         sensor_name += "_fingertip_" + finger
         # e.g. left_fingertip_thumb
+
+
         data = self.data.sensor(sensor_name).data
         # data is an array containing only one number: the normal force
-        return data[0] / 30
+        force = data[0] / 30
+
+
+        texture = None
+        site_id = self.model.sensor(sensor_name).objid[0]
+        sensor_body = self.model.body(self.model.site(site_id).bodyid[0])
+        body_first_geom = sensor_body.geomadr[0]
+        body_last_geom = body_first_geom + sensor_body.geomnum[0]
+
+        for contact in self.data.contact:
+            flex = -1
+            geom = -1
+            if contact.flex[0] != -1:
+                flex = contact.flex[0]
+                geom = contact.geom[1]
+            elif contact.flex[1] != -1:
+                flex = contact.flex[1]
+                geom = contact.geom[0]
+
+            if geom != -1:
+                # means we have a contact between a flex and a geom
+                if geom in range(body_first_geom, body_last_geom + 1):
+                    # contact with the body of the sensor
+                    if flex in self._flex_textures:
+                        texture = self._flex_textures[flex]
+    
+
+        return (force, texture)
 
     def step_simulation(self, duration: float | None):
         if self._should_reset:

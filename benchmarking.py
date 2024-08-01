@@ -44,7 +44,7 @@ class Plotter:
         if self._animation != None:
             self._animation.pause()
 
-    def get_data(self, from_date: datetime = None, from_index: int | None = None, only_columns: list[str] | None = None) -> tuple[dict[int, list[float]], datetime]:
+    def get_data(self, from_date: datetime = None, from_index: int | None = None, only_columns: list[str] | None = None) -> tuple[dict[str, list[float]], datetime]:
         if from_date is not None and from_index is not None:
             raise ValueError("Cannot have both from_date and from_index")
 

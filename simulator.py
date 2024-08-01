@@ -24,30 +24,30 @@ def simulation(engine: Engine,
     print("Starting simulation.")
     engine.start_simulation()
 
-    perf_bench = Benchmarker(title="Performance profiler")
-    frame_bench = Benchmarker(title="Performance profiler")
-    force_plot = Plotter(title="Applied force graph")
+    # frame_bench = Benchmarker(title="Performance profiler")
+    # perf_bench = Benchmarker(title="Performance profiler")
+    # force_plot = Plotter(title="Applied force graph")
 
     def loop():
         print("Starting visualization...")
         visualizer.start_visualization()
         gui.start_gui(engine, visualizer)
-        if isinstance(visualizer, MujocoXRVisualizer):
-            visualizer.add_perf_counters(perf_bench, frame_bench)
+        # if isinstance(visualizer, MujocoXRVisualizer):
+        #     visualizer.add_perf_counters(perf_bench, frame_bench)
 
         print(Style.BRIGHT + Fore.GREEN, f"Done!{Style.NORMAL} Everything is up and running.{Fore.RESET}\n")
         try:
             while not visualizer.should_exit() and not gui.should_exit():
-                frame_bench.new_iteration()
+                # frame_bench.new_iteration()
                 frame_continue, frame_duration = visualizer.wait_frame()
-                frame_bench.mark("Wait frame")
-                frame_bench.end_iteration()
+                # frame_bench.mark("Wait frame")
+                # frame_bench.end_iteration()
                 if visualizer.should_exit():
                     break
                 if not frame_continue:
                     continue
-                perf_bench.new_iteration()
-                force_plot.new_iteration()
+                # perf_bench.new_iteration()
+                # force_plot.new_iteration()
 
                 if hand_provider is not None:
                     for hand in filter(lambda h: h.tracking, hands):
@@ -62,28 +62,29 @@ def simulation(engine: Engine,
                             engine.move_finger(hand.id, finger, closure)
 
                 engine.step_simulation(frame_duration)
-                perf_bench.mark("Step simulation")
+                # perf_bench.mark("Step simulation")
 
                 visualizer.render_frame()
                 # perf_bench.mark("Render")
 
                 for hand in filter(lambda h: h.haptics, hands):
                     for finger in HAPTIC_FINGERS:
-                        force = engine.get_contact_force(hand.id, finger)
+                        force, texture = engine.get_contact(hand.id, finger)
                         # perf_bench.mark("Contact force")
-                        force_plot.plot(force, f"{finger} hand {hand}")
-
+                        # force_plot.plot(force, f"{finger} hand {hand}")
+                        
+                        print(force, texture)
                         if weart is not None:
-                            weart.apply_force(hand.id, finger, force)
+                            weart.apply_finger(hand.id, finger, force, texture)
                             # perf_bench.mark("Apply force to finger")
 
-                force_plot.end_iteration()
-                perf_bench.end_iteration()
+                # force_plot.end_iteration()
+                # perf_bench.end_iteration()
         except KeyboardInterrupt:
             pass # To exit gracefully. Even though we swallow the error, we still exit the loop.
         finally:
-            force_plot.stop()
-            perf_bench.stop()
+            # force_plot.stop()
+            # perf_bench.stop()
             #perf_bench.export_csv("benchmark.csv", include_time=True)
 
             print("\nStopping visualization...")
@@ -109,7 +110,7 @@ def simulation(engine: Engine,
 if __name__ == "__main__":
     # CHANGEABLE PARAMETERS
 
-    used_engine = "coppelia"
+    used_engine = "mujoco"
     used_viz = "simple"
     use_weart = False
     used_gui = "tui"
