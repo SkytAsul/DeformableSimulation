@@ -9,7 +9,8 @@ from weart import TextureType
 
 TEXTURE_MAPPING = {
     "left kidney": TextureType.ProfiledRubberSlow,
-    "liver cibrosis": TextureType.CrushedRock
+    "liver cibrosis": TextureType.CrushedRock,
+    "liver lesion": TextureType.VenetianGranite
 }
 
 class MujocoConnector(Engine):

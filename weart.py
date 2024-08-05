@@ -82,6 +82,7 @@ class WeartConnector(object):
             texture_obj.active = False
         else:
             texture_obj.active = True
+            texture_obj.volume = 0.8
             texture_obj.textureType = texture
 
         finger_obj.touch_effect.Set(finger_obj.touch_effect.getTemperature(), WeArtForce(True, force_value), texture_obj)

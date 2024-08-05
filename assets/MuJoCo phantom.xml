@@ -19,12 +19,12 @@
     <default>
         <default class="phantom">
             <mesh scale="3 3 3" />
-            <default class="visual">
-                <geom group="2" type="mesh" contype="0" conaffinity="0" />
-            </default>
-            <default class="collision">
-                <geom group="2" type="mesh" />
-            </default>
+        </default>
+        <default class="visual">
+            <geom group="2" type="mesh" contype="0" conaffinity="0" />
+        </default>
+        <default class="collision-hand">
+            <geom group="2" type="mesh" contype="1" conaffinity="3"/>
         </default>
     </default>
 
@@ -52,6 +52,8 @@
             rgba="1.000000 1.000000 1.000000 1.000000" />
         <material name="liver"
             rgba="0.500000 0.250000 0.250000 1.000000" />
+        <material name="liver lesion"
+            rgba="0.800000 0.250000 0.250000 1.000000" />
         <material name="muscle"
             rgba="1.000000 0.500000 0.500000 1.000000" />
         <material name="outer_spine"
@@ -135,45 +137,45 @@
             </body>
             <body name="right_hand" pos="0 -0.03 0" euler="180 0 120">
                 <freejoint />
-                <geom name="right_thumb_1_visual" class="collision" material="thumb_1"
+                <geom name="right_thumb_1_visual" class="collision-hand" material="thumb_1"
                 mesh="thumb_1_visual" />
                 <body>
                     <site name="right_fingertip_thumb" type="sphere" pos="-0.04 0.046 -0.003" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
-                    <geom name="right_thumb_2_visual" class="collision" material="thumb_2"
+                    <geom name="right_thumb_2_visual" class="collision-hand" material="thumb_2"
                     mesh="thumb_2_visual" />
                 </body>
-                <geom name="right_index_1_visual" class="collision" material="index_1"
+                <geom name="right_index_1_visual" class="collision-hand" material="index_1"
                 mesh="index_1_visual" />
-                <geom name="right_index_2_visual" class="collision" material="index_2"
+                <geom name="right_index_2_visual" class="collision-hand" material="index_2"
                 mesh="index_2_visual" />
                 <body>
                     <site name="right_fingertip_index" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
-                    <geom name="right_index_3_visual" class="collision" material="index_3"
+                    <geom name="right_index_3_visual" class="collision-hand" material="index_3"
                     mesh="index_3_visual" />
                 </body>
-                <geom name="right_middle_1_visual" class="collision" material="middle_1"
+                <geom name="right_middle_1_visual" class="collision-hand" material="middle_1"
                 mesh="middle_1_visual" />
-                <geom name="right_middle_2_visual" class="collision" material="middle_2"
+                <geom name="right_middle_2_visual" class="collision-hand" material="middle_2"
                 mesh="middle_2_visual" />
                 <body>
                     <site name="right_fingertip_middle" type="sphere" pos="-0.017 0.003 0.065" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
-                    <geom name="right_middle_3_visual" class="collision" material="middle_3"
+                    <geom name="right_middle_3_visual" class="collision-hand" material="middle_3"
                         mesh="middle_3_visual" />
                 </body>
-                <geom name="right_annular_1_visual" class="collision" material="annular_1"
+                <geom name="right_annular_1_visual" class="collision-hand" material="annular_1"
                     mesh="annular_1_visual" />
-                <geom name="right_annular_2_visual" class="collision" material="annular_2"
+                <geom name="right_annular_2_visual" class="collision-hand" material="annular_2"
                     mesh="annular_2_visual" />
-                <geom name="right_annular_3_visual" class="collision" material="annular_3"
+                <geom name="right_annular_3_visual" class="collision-hand" material="annular_3"
                     mesh="annular_3_visual" />
-                <geom name="right_pinky_1_visual" class="collision" material="pinky_1"
+                <geom name="right_pinky_1_visual" class="collision-hand" material="pinky_1"
                     mesh="pinky_1_visual" />
-                <geom name="right_pinky_2_visual" class="collision" material="pinky_2"
+                <geom name="right_pinky_2_visual" class="collision-hand" material="pinky_2"
                     mesh="pinky_2_visual" />
-                <geom name="right_pinky_3_visual" class="collision" material="pinky_3"
+                <geom name="right_pinky_3_visual" class="collision-hand" material="pinky_3"
                     mesh="pinky_3_visual" />
                 <geom name="right_wrist_visual" class="visual" material="wrist" mesh="wrist_visual" />
-                <geom name="right_palm_visual" class="collision" material="palm" mesh="palm_visual" />
+                <geom name="right_palm_visual" class="collision-hand" material="palm" mesh="palm_visual" />
             </body>
         </frame>
         <frame name="left_hand_frame" pos="-0.3 0 1">
@@ -185,36 +187,36 @@
                 <site name="left_fingertip_thumb" type="sphere" pos="-0.04 0.046 -0.003" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
                 <site name="left_fingertip_index" type="sphere" pos="-0.026 0.017 0.05" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
                 <site name="left_fingertip_middle" type="sphere" pos="-0.017 0.003 0.065" size=".01 .01 .01" rgba="0.5 0.5 1 .2" />
-                <geom name="left_thumb_1_visual" class="collision" material="thumb_1"
+                <geom name="left_thumb_1_visual" class="collision-hand" material="thumb_1"
                     mesh="thumb_1_visual" />
-                <geom name="left_thumb_2_visual" class="collision" material="thumb_2"
+                <geom name="left_thumb_2_visual" class="collision-hand" material="thumb_2"
                     mesh="thumb_2_visual" />
-                <geom name="left_index_1_visual" class="collision" material="index_1"
+                <geom name="left_index_1_visual" class="collision-hand" material="index_1"
                     mesh="index_1_visual" />
-                <geom name="left_index_2_visual" class="collision" material="index_2"
+                <geom name="left_index_2_visual" class="collision-hand" material="index_2"
                     mesh="index_2_visual" />
-                <geom name="left_index_3_visual" class="collision" material="index_3"
+                <geom name="left_index_3_visual" class="collision-hand" material="index_3"
                     mesh="index_3_visual" />
-                <geom name="left_middle_1_visual" class="collision" material="middle_1"
+                <geom name="left_middle_1_visual" class="collision-hand" material="middle_1"
                     mesh="middle_1_visual" />
-                <geom name="left_middle_2_visual" class="collision" material="middle_2"
+                <geom name="left_middle_2_visual" class="collision-hand" material="middle_2"
                     mesh="middle_2_visual" />
-                <geom name="left_middle_3_visual" class="collision" material="middle_3"
+                <geom name="left_middle_3_visual" class="collision-hand" material="middle_3"
                     mesh="middle_3_visual" />
-                <geom name="left_annular_1_visual" class="collision" material="annular_1"
+                <geom name="left_annular_1_visual" class="collision-hand" material="annular_1"
                     mesh="annular_1_visual" />
-                <geom name="left_annular_2_visual" class="collision" material="annular_2"
+                <geom name="left_annular_2_visual" class="collision-hand" material="annular_2"
                     mesh="annular_2_visual" />
-                <geom name="left_annular_3_visual" class="collision" material="annular_3"
+                <geom name="left_annular_3_visual" class="collision-hand" material="annular_3"
                     mesh="annular_3_visual" />
-                <geom name="left_pinky_1_visual" class="collision" material="pinky_1"
+                <geom name="left_pinky_1_visual" class="collision-hand" material="pinky_1"
                     mesh="pinky_1_visual" />
-                <geom name="left_pinky_2_visual" class="collision" material="pinky_2"
+                <geom name="left_pinky_2_visual" class="collision-hand" material="pinky_2"
                     mesh="pinky_2_visual" />
-                <geom name="left_pinky_3_visual" class="collision" material="pinky_3"
+                <geom name="left_pinky_3_visual" class="collision-hand" material="pinky_3"
                     mesh="pinky_3_visual" />
                 <geom name="left_wrist_visual" class="visual" material="wrist" mesh="wrist_visual" />
-                <geom name="left_palm_visual" class="collision" material="palm" mesh="palm_visual" />
+                <geom name="left_palm_visual" class="collision-hand" material="palm" mesh="palm_visual" />
             </body>
         </frame>
 
@@ -247,7 +249,7 @@
                 <edge equality="true" />
                 <pin id="47 38 58" />
                 <contact internal="false" condim="3" solref="0.005 1" solimp=".95 .99 .0001"
-                    selfcollide="none" />
+                    selfcollide="none" contype="2" conaffinity="1" />
                 <plugin plugin="mujoco.elasticity.solid">
                     <config key="poisson" value="0.1" />
                     <config key="young" value="5e4" />
@@ -259,10 +261,23 @@
                 file="phantom-assets/liver_converted_vol.msh" scale="3 3 3" material="liver" >
                 <edge equality="true" damping="1"/>
                 <pin id="126 79 66 98 80 101"/>
-                <contact internal="false" condim="3" solref="0.005 1" solimp=".95 .99 .0001" selfcollide="none" />
+                <contact internal="false" condim="3" solref="0.005 1" solimp=".95 .99 .0001" selfcollide="none"
+                    contype="2" conaffinity="1"/>
                 <plugin plugin="mujoco.elasticity.solid">
                     <config key="poisson" value="0" />
                     <config key="young" value="5e4" />
+                </plugin>
+            </flexcomp>
+
+            <flexcomp name="liver lesion" type="ellipsoid" count="4 4 4" spacing=".012 .012 .012" pos=".15 0 1.4"
+                radius=".001" dim="3" mass="5" material="liver lesion" >
+                <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"
+                    contype="2" conaffinity="1"/>
+                <edge equality="true" damping="1"/>
+                <plugin plugin="mujoco.elasticity.solid">
+                    <config key="poisson" value="0"/>
+                    <!--Units are in Pa (SI)-->
+                    <config key="young" value="5e4"/>
                 </plugin>
             </flexcomp>
         </frame>
