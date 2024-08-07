@@ -1,0 +1,161 @@
+<?xml-model href="../../mujoco-xml-schema-mjcf/mujoco.xsd"?>
+<mujoco>
+    <statistic extent="1.5" meansize=".05" />
+
+    <option density="1.204" viscosity="1.8e-5" timestep=".001" integrator="implicitfast"
+            solver="CG" tolerance="1e-6" jacobian="sparse" />
+  
+    <visual>
+      <rgba haze="0.15 0.25 0.35 1" fog="0.5 0.8 0.5 0.5"/>
+      <quality shadowsize="4096" />
+      <map stiffness="100" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3" />
+    </visual>
+
+    <size memory="10M" />
+
+    <extension>
+        <plugin plugin="mujoco.elasticity.solid" />
+    </extension>
+  
+    <default>
+      <tendon limited="true" width="0.003" rgba="1 1 1 1"/>
+      <geom friction=".2"/>
+      <default class="weight">
+        <geom rgba=".8 .4 .8 1"/>
+        <site rgba=".8 .4 .8 1"/>
+      </default>
+      <default class="balloon">
+        <!--
+          0.167 is the MKS density of helium at room temperature.
+          Note this does not take into account the mass of the rubber,
+          which is likely not insignificant.
+        -->
+        <geom density="0.167" fluidshape="ellipsoid"/>
+        <default class="pink">
+          <geom rgba="1 .6 .7 1"/>
+          <site rgba="1 .6 .7 1"/>
+        </default>
+        <default class="blue">
+          <geom rgba=".3 .7 .9 1"/>
+          <site rgba=".3 .7 .9 1"/>
+        </default>
+        <default class="green">
+          <geom rgba=".4 .9 .5 1"/>
+          <site rgba=".4 .9 .5 1"/>
+        </default>
+        <default class="orange">
+          <geom rgba="1 .4 0 1"/>
+          <site rgba="1 .4 0 1"/>
+        </default>
+      </default>
+    </default>
+  
+    <asset>
+      <texture type="skybox" builtin="gradient" rgb1="0.529 0.808 0.922" rgb2="0 0 0" width="512"
+          height="512" />
+      <texture name="grid" type="2d" builtin="checker" width="512" height="512"
+        rgb2="0.127 0.731 0.141 " rgb1="0.484 0.984 0.0" mark="edge"/>
+      <material name="grid" texture="grid" texrepeat="2 2" texuniform="true"
+        reflectance="0" rgba=".5 .5 .5 1"/>
+
+       <mesh file="Hand_Decomposed.obj" scale=".2 .2 .2" />
+    </asset>
+  
+    <worldbody>
+      <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
+        dir="0 0 -1" castshadow="false" />
+      <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
+
+      <flexcomp type="grid" count="6 6 6" spacing=".06 .06 .06" pos="0 0.8 -.25" dim="3"
+          radius=".005" rgba="0 .7 .7 1" mass="5" name="softbody">
+          <edge damping="1"/>
+          <!-- <pin gridrange="0 0 0 4 4 0"/> -->
+          <contact selfcollide="none" />
+          <plugin plugin="mujoco.elasticity.solid">
+              <config key="poisson" value="0" />
+              <config key="young" value="5e4" />
+          </plugin>
+      </flexcomp>
+
+      <body name="finger" mocap="true" pos="2 0 1" euler="90 0 0">
+        <geom type="capsule" size="0.01115 0.036" />
+      </body>
+      <frame name="right_hand_frame" pos="0 0 1">
+        <body name="right_hand_mocap" mocap="true">
+            <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .3" contype="0" conaffinity="0"/>
+          <site name="fingertip" type="sphere" pos="0.0 -0.03 -0.055" rgba="0.5 0.5 1 1" />
+        </body>
+        <body name="right_hand_collision">
+          <freejoint/>
+            <geom type="mesh" mesh="Hand_Decomposed" euler="180 0 0"/>
+        </body>
+      </frame>
+
+      <geom name="ground" type="plane" size="5 5 .05" pos="0 0 -.5" material="grid"/>
+      <geom name="ramp" type="box" size=".4 .2 .03" pos="0 0 -.4" euler="0 20 0" rgba="1 1 1 1"/>
+  
+      <body name="weight" childclass="weight" pos=".3 0 .2">
+        <freejoint/>
+        <!-- The mass of the weight was chosen to be slightly bigger than the total buoyancy of the balloons. -->
+        <geom name="weight" type="box" size=".015 .015 .015" mass=".0347"/>
+        <site name="weight1" pos=" .013  .013 .013" size="0.005"/>
+        <site name="weight2" pos="-.013 -.013 .013" size="0.005"/>
+      </body>
+  
+      <!-- The gravcomp value of 7.2 is the ratio of air and helium desities at room temperature. -->
+      <body name="pink" gravcomp="7.2" pos="-.2 .1 .2" childclass="pink">
+        <freejoint />
+        <geom name="pink" type="ellipsoid" size=".11 .11 .15"/>
+        <geom name="pink_knot" pos="0 0 -.15" size=".02"/>
+        <site name="pink" pos="0 0 -.17" size="0.01"/>
+      </body>
+  
+      <body name="blue" gravcomp="7.2" pos=".1 .1 .2" childclass="blue">
+        <freejoint />
+        <geom name="blue" type="ellipsoid" size=".12 .12 .15"/>
+        <geom name="blue_knot" pos="0 0 -.15" size=".02"/>
+        <site name="blue" pos="0 0 -.17" size="0.01"/>
+      </body>
+  
+      <body name="green" gravcomp="7.2" pos=".1 -.1 .2" childclass="green">
+        <freejoint />
+        <geom name="green" type="ellipsoid" size=".12 .12 .14"/>
+        <geom name="green_knot" pos="0 0 -.14" size=".02"/>
+        <site name="green" pos="0 0 -.16" size="0.01"/>
+      </body>
+  
+      <body name="orange" gravcomp="7.2" pos="-.12 -.12 .2" childclass="orange">
+        <freejoint />
+        <geom name="orange" type="ellipsoid" size=".12 .12 .13"/>
+        <geom name="orange_knot" pos="0 0 -.13" size=".02"/>
+        <site name="orange" pos="0 0 -.15" size="0.01"/>
+      </body>
+    </worldbody>
+
+    <equality>
+      <weld body1="right_hand_mocap" body2="right_hand_collision"/>
+    </equality>
+  
+    <tendon>
+      <spatial range="0 0.6">
+        <site site="pink"/>
+        <site site="weight1"/>
+      </spatial>
+      <spatial range="0 0.4">
+        <site site="blue"/>
+        <site site="weight1"/>
+      </spatial>
+      <spatial range="0 0.3">
+        <site site="green"/>
+        <site site="weight2"/>
+      </spatial>
+      <spatial range="0 0.5">
+        <site site="orange"/>
+        <site site="weight2"/>
+      </spatial>
+    </tendon>
+
+    <sensor>
+        <touch site="fingertip" name="fingertip_sensor" />
+    </sensor>
+  </mujoco>
