@@ -1,16 +1,3 @@
-Hand works in every configuration, fingers' movement is responsive and quite precise. Integration with oculus is good, Youenne will make the final adjustments.
-
-**Possible Fixes:**
-- Rescale force feedback to make soft bodies "soft"
-- Try using Time of Flight instead of Closure (should be a measure of distance)
-- Modify the script to work on two hands (should be same code, maybe different variables)
-
-**Possible Add-ons:**
-- Use cardioids
-- Use thumb's abduction (unlock joint Thumb_J1  and modify task + jacobian)
-- Use raw data - time of flight (distance) + orientation - to reconstruct pose more realistically (pain in the ass)
-
-
 # Introduction
 The goal of this project is to link a haptic device (the WEART TouchDIVER), a VR headset (the Oculus Rift S) and a physics simulation software (CoppeliaSim with the MuJoCo engine) to simulate real-time touch of a deformable object.
 
