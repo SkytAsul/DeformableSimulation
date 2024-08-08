@@ -58,8 +58,8 @@ def simulation(engine: Engine,
                 if weart is not None:
                     for hand in filter(lambda h: h.haptics, hands):
                         for finger in HAPTIC_FINGERS:
-                            closure = weart.get_finger_closure(hand.id, finger)
-                            engine.move_finger(hand.id, finger, closure)
+                            closure, abduction = weart.get_finger_data(hand.id, finger)
+                            engine.move_finger(hand.id, finger, closure, abduction)
 
                 engine.step_simulation(frame_duration)
                 # perf_bench.mark("Step simulation")
@@ -111,13 +111,13 @@ if __name__ == "__main__":
     # CHANGEABLE PARAMETERS
 
     used_engine = "mujoco"
-    used_viz = "openxr"
-    use_weart = True
+    used_viz = "simple"
+    use_weart = False
     used_gui = "tui"
 
-    # scene_path = "assets/MuJoCo scene.xml"
-    # scene_path = "assets/balloons.xml"
-    scene_path = "assets/MuJoCo phantom.xml"
+    # scene_path = "assets/MuJoCo scene simple.xml"
+    # scene_path = "assets/MuJoCo phantom.xml"
+    scene_path = "assets/MuJoCo hands.xml"
 
     # It seems like we can keep tracking and haptics enabled
     # even if not both hands are connected (WEART and Oculus).

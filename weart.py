@@ -70,9 +70,9 @@ class WeartConnector(object):
         for finger in self._fingers.values():
             self._client.RemoveMessageListener(finger.thimble_tracking)
 
-    def get_finger_closure(self, hand_id: int, finger: str):
+    def get_finger_data(self, hand_id: int, finger: str) -> tuple[float, float]:
         thimble_tracking = self._fingers[WeartConnector.get_finger_id(hand_id, finger)].thimble_tracking
-        return thimble_tracking.GetClosure()
+        return thimble_tracking.GetClosure(), thimble_tracking.GetAbduction()
     
     def apply_finger(self, hand_id: int, finger: str, force_value: float, texture: TextureType | None):
         finger_obj = self._fingers[WeartConnector.get_finger_id(hand_id, finger)]

@@ -6,13 +6,14 @@ from weart import TextureType
 class Engine:
     """Represents a link to a physics engine.
     """
-    def move_finger(self, hand_id: int, finger: str, closure: float):
+    def move_finger(self, hand_id: int, finger: str, closure: float, abduction: float):
         """Move one of the virtual fingers with an angle.
 
         Args:
             hand_id (int): 0 = left hand, 1 = right hand
             finger (str): which finger to move (thumb, index, middle)
             closure (float): closure value of the finger
+            abduction (float): abduction value of the finger
         """
         pass
     def move_hand(self, hand_id: int, position: list[float], rotation: list[float]):
