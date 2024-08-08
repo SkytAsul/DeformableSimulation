@@ -5,3 +5,4 @@ weartsdk-sky>=1.0.4
 pyopenxr==1.1.3601
 mujoco==3.2.0
 colorama>=0.4.6
+numpy==1.26.4

@@ -122,8 +122,8 @@ if __name__ == "__main__":
 
     # It seems like we can keep tracking and haptics enabled
     # even if not both hands are connected (WEART and Oculus).
-    # Disabling tracking and haptics for an unused world is
-    # still useful as it hides the hand in MuJoCo. 
+    # Disabling tracking and haptics for an unused hand is
+    # still useful as it hides the hand in MuJoCo.
     hands = (
         Hand(id = 0, side = "left", tracking = True, haptics = True, controller_rotation=0),
         Hand(id = 1, side = "right", tracking = True, haptics = True, controller_rotation=0)

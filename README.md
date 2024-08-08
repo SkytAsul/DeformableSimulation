@@ -1,7 +1,11 @@
-# Introduction
-The goal of this project is to link a haptic device (the WEART TouchDIVER), a VR headset (the Oculus Rift S) and a physics simulation software (CoppeliaSim with the MuJoCo engine) to simulate real-time touch of a deformable object.
+![](assets/cover.png)
 
-This project is conducted at the DIAG Robotics Laboratory of Sapienza University of Rome, under the supervision of Marilena Vendittelli.
+# Introduction
+The goal of this project is to link a haptic device (the WEART TouchDIVER), a VR headset (the Oculus Rift S) and a physics simulation software (CoppeliaSim with the MuJoCo engine, or directly MuJoCo) to simulate real-time touch of a deformable object.
+
+This project is conducted at the DIAG Robotics Laboratory of Sapienza University of Rome, under the supervision of Marilena Vendittelli. It is the subject of one of my internship at INSA Rennes, a French engineering school.
+
+The simulator integrates code to retarget the motion of the fingers (usinig the closure and abduction values fromm WEART) to the virtual hand in MuJoCo. This has been done by a group of Sapienza students.
 
 # MuJoCoXR
 During the project, a way to display MuJoCo in a VR headset has been developed.
@@ -40,8 +44,11 @@ Before installing dependencies, remember to create a Python virtual environment!
 - [matplotlib](https://pypi.org/project/matplotlib/)
     - for real-time performance plots
     - `pip install matplotlib`
+- [numpy](https://pypi.org/project/numpy/)
+    - for fingers motion retargeting
+    - `pip install numpy`
 
-You can install all these dependencies at once by executing this command while being in the repository directory:
+You can install all of these dependencies at once by executing this command while being in the repository directory:
 ```sh
 $ pip install -r requirements.txt
 ```
@@ -55,6 +62,10 @@ $ pip install -r requirements.txt
 
 ### MuJoCo simulation
 1. Open the WEART Middleware and connect your TouchDIVERs.
+1. Wear your TouchDIVERs in the same way as in the following picture:  
+    ![](assets/weart-wear.jpg)
+    > [!IMPORTANT]
+    > Make sure to wear the Oculus Touch Controllers in the same position as in the picture  (facing the exterior of the hands).
 1. Connect your VR device and launch the runtime program (Meta Quest Link for instance).
 1. Change the options in [`simulator.py`](simulator.py) so they match your setup.
 1. Launch the [`simulator.py`](simulator.py) python file.
