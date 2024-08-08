@@ -135,7 +135,7 @@
             <body name="right_hand_mocap" mocap="true">
                 <geom type="box" size="0.02 0.05 0.05" rgba=".5 .5 .5 .2" class="visual" />
             </body>
-            <body name="right_hand" pos="0 -0.03 0" euler="180 0 120">
+            <body name="right_hand" pos="0 -0.03 0" euler="180 0 -60">
                 <freejoint />
                 <geom name="right_thumb_1_visual" class="collision-hand" material="thumb_1"
                 mesh="thumb_1_visual" />

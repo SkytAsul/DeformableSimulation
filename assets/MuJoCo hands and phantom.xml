@@ -32,7 +32,7 @@
     <tendon rgba="0.5 0 0 1" />
     <general actlimited="true" actrange="0 1.7" />
     <default class="collision_primitive">
-      <geom type="capsule" contype="1" conaffinity="1" condim="1" group="3" rgba="0 0.5 0.5 1"
+      <geom type="capsule" contype="1" conaffinity="3" condim="1" group="3" rgba="0 0.5 0.5 1"
         density="300" friction="1 1 0.0001" />
     </default>
     <default class="bone">
@@ -127,6 +127,8 @@
       rgba="1.000000 1.000000 1.000000 1.000000" />
     <material name="liver"
       rgba="0.500000 0.250000 0.250000 1.000000" />
+    <material name="liver lesion"
+      rgba="0.800000 0.250000 0.250000 1.000000" />
     <material name="muscle"
       rgba="1.000000 0.500000 0.500000 1.000000" />
     <material name="outer_spine"
@@ -680,41 +682,64 @@
       </body>
     </body>
 
-    <!-- <frame pos=".1 0 1.3" euler="0 0 3.14">
-      <body name="Right_abdomen phantom" childclass="phantom">
-          <geom mesh="right_kidney" material="right_kidney" class="visual" />
-          <geom mesh="ribs" material="ribs" class="visual" />
-          <geom mesh="portal_vein" material="portal_vein" class="visual" />
-          <geom mesh="outer_spine" material="outer_spine" class="visual" />
-          <geom mesh="muscle" material="muscle" class="visual" />
-          <geom mesh="liver" material="liver" class="visual" />
-          <geom mesh="inner_spine" material="inner_spine" class="visual" />
-          <geom mesh="fat" material="fat" class="visual" />
-          <geom mesh="cava" material="cava" class="visual" />
-          <geom mesh="aorta" material="aorta" class="visual" />
+    <frame pos=".1 0 1.3" euler="0 0 3.14">
+      <body name="abdomen phantom" childclass="phantom">
+        <!-- Only visual for now until convex hull -->
+        <geom mesh="right_kidney" material="right_kidney" class="visual" />
+        <geom mesh="ribs" material="ribs" class="visual" />
+        <geom mesh="portal_vein" material="portal_vein" class="visual" />
+        <geom mesh="outer_spine" material="outer_spine" class="visual" />
+        <geom mesh="muscle" material="muscle" class="visual" />
+        <!-- <geom mesh="liver" material="liver" class="visual" /> -->
+        <geom mesh="inner_spine" material="inner_spine" class="visual" />
+        <geom mesh="fat" material="fat" class="visual" />
+        <geom mesh="cava" material="cava" class="visual" />
+        <geom mesh="aorta" material="aorta" class="visual" />
       </body>
 
-      <flexcomp name="left kidney" type="gmsh" dim="3" pos=".1 -.09 1.45" euler="0 0 3.14"
-          file="phantom-assets/left kidney_converted_vol.msh" scale="3 3 3" material="right_kidney" >
-          <edge equality="true" />
-          <pin id="47 38 58" />
-          <contact internal="false" condim="3" solref="0.005 1" solimp=".95 .99 .0001"
-              selfcollide="none" />
-          <plugin plugin="mujoco.elasticity.solid">
-              <config key="poisson" value="0.1" />
-              <config key="young" value="5e4" />
-              <config key="damping" value="0.005" />
-          </plugin>
+      <!-- For some reason, the position and orientation from the parent frame is not
+       accumulated in the flexcomp. The "real" position should be pos="0 .09 .15" -->
+      <flexcomp name="left kidney normal" type="gmsh" dim="3" pos=".1 -.09 1.45" euler="0 0 3.14"
+        file="phantom-assets/left kidney_converted_vol.msh" scale="3 3 3" material="right_kidney">
+        <edge equality="true" />
+        <pin id="47 38 58" />
+        <contact internal="false" condim="3" solref="0.005 1" solimp=".95 .99 .0001"
+          selfcollide="none" contype="2" conaffinity="1" />
+        <plugin plugin="mujoco.elasticity.solid">
+          <config key="poisson" value="0.1" />
+          <config key="young" value="5e4" />
+          <config key="damping" value="0.005" />
+        </plugin>
       </flexcomp>
-  </frame> -->
 
-    <body name="ball" pos="0 0 0.03">
-      <freejoint />
-      <geom type="box" size=".03 .03 .03" density="4000" />
-      <geom name="sphere_collision" class="collision_primitive" type="box" size=".03 .03 .03"
-        density="4000"
-        pos="0 0 0" euler="0 0 0" />
-    </body>
+      <flexcomp name="liver cibrosis" pos=".1 0 1.3" euler="1.57 0 3.14" type="gmsh" dim="3"
+        file="phantom-assets/liver_converted_vol.msh" scale="3 3 3" material="liver">
+        <edge equality="true" damping="1" />
+        <pin id="126 79 66 98 80 101" />
+        <contact internal="false" condim="3" solref="0.005 1" solimp=".95 .99 .0001"
+          selfcollide="none"
+          contype="2" conaffinity="1" />
+        <plugin plugin="mujoco.elasticity.solid">
+          <config key="poisson" value="0" />
+          <config key="young" value="5e4" />
+        </plugin>
+      </flexcomp>
+
+      <flexcomp name="liver lesion" type="ellipsoid" count="4 4 4" spacing=".012 .012 .012"
+        pos=".15 0 1.4"
+        radius=".001" dim="3" mass="5" material="liver lesion">
+        <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"
+          contype="2" conaffinity="1" />
+        <edge equality="true" damping="1" />
+        <plugin plugin="mujoco.elasticity.solid">
+          <config key="poisson" value="0" />
+          <!--Units
+          are in Pa (SI)-->
+          <config key="young" value="5e4" />
+        </plugin>
+      </flexcomp>
+    </frame>
+
   </worldbody>
 
   <actuator>

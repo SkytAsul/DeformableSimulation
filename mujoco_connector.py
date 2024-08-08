@@ -124,7 +124,6 @@ class MujocoConnector(Engine):
         if finger == "middle":
             self.move_finger(hand_id, "annular", closure, abduction)
             self.move_finger(hand_id, "pinky", closure, abduction)
-            return
 
         if hand_id == 1:
             hand_side = 1 

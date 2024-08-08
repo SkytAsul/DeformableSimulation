@@ -111,21 +111,22 @@ if __name__ == "__main__":
     # CHANGEABLE PARAMETERS
 
     used_engine = "mujoco"
-    used_viz = "simple"
-    use_weart = False
+    used_viz = "openxr"
+    use_weart = True
     used_gui = "tui"
 
     # scene_path = "assets/MuJoCo scene simple.xml"
     # scene_path = "assets/MuJoCo phantom.xml"
-    scene_path = "assets/MuJoCo hands.xml"
+    # scene_path = "assets/MuJoCo hands.xml"
+    scene_path = "assets/MuJoCo hands and phantom.xml"
 
     # It seems like we can keep tracking and haptics enabled
     # even if not both hands are connected (WEART and Oculus).
     # Disabling tracking and haptics for an unused world is
     # still useful as it hides the hand in MuJoCo. 
     hands = (
-        Hand(id = 0, side = "left", tracking = False, haptics = False, controller_rotation=0),
-        Hand(id = 1, side = "right", tracking = True, haptics = True, controller_rotation=-180)
+        Hand(id = 0, side = "left", tracking = True, haptics = True, controller_rotation=0),
+        Hand(id = 1, side = "right", tracking = True, haptics = True, controller_rotation=0)
     )
 
     # SCRIPT
