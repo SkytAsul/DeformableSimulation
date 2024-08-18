@@ -285,7 +285,7 @@ if (space_location.location_flags & xr.SPACE_LOCATION_POSITION_VALID_BIT
     
     hand_pos = numpy.zeros(3)
     hand_rot = numpy.zeros(4)
-    orientation = [space_location.pose.orientation[3], *space_location.pose.orientation[3]]
+    orientation = [space_location.pose.orientation[3], *space_location.pose.orientation[0:3]]
     mujoco.mjv_room2model(hand_pos, hand_rot, list(space_location.pose.position), orientation, self._mj_scene)
     return hand_pos, hand_rot
 ```]
@@ -304,4 +304,4 @@ For those reasons, we made every OpenXR-related code from the ground up.
 = Annex - Source Code <source_code>
 #set text(size: 9pt)
 #show: it => align(center, block(width: 120%, breakable: true, it))
-#show-code(frame: none, showrange: (0, 381))
+#show-code(frame: none)
