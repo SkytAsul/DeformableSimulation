@@ -93,3 +93,22 @@ You can plug any simulation scene you want. The only requirements are:
 - the hands mocap bodies must follow the names `{side}_hand_mocap`, where `{side}` is _left_ or _right_.
 - the hands "real" bodies must follow the names `{side}_hand` and their rotations must be expressed with the `euler` parameter.
 - the fingertip sensors must be of type `contact` and follow the names `{side}_fingertip_{finger}`, where `{finger}` is _thumb_, _index_ or _middle_.
+
+# Cite this project
+A conference paper has been submitted here: https://inria.hal.science/hal-04733238v1. You can cite it like this:
+```bibtex
+@inproceedings{desantis:hal-04733238,
+  TITLE = {{Haptic interaction with virtual deformable objects}},
+  AUTHOR = {de Santis, Emanuele and Le Jeune, Youenn and Marchal, Maud and Pacchierotti, Claudio and Vendittelli, Marilena},
+  URL = {https://inria.hal.science/hal-04733238},
+  BOOKTITLE = {{I-RIM 3D 2024 -Conference on  Italian Institute of Robotics and Intelligent Machines}},
+  ADDRESS = {Rome, Italy},
+  PAGES = {1-3},
+  YEAR = {2024},
+  MONTH = Oct,
+  KEYWORDS = {Simulation ; Soft material ; Virtual Reality ; Haptic rendering ; Motion retargeting},
+  PDF = {https://inria.hal.science/hal-04733238v1/file/Extended_Abstract_I_RIM_3D_2024.pdf},
+  HAL_ID = {hal-04733238},
+  HAL_VERSION = {v1},
+}
+```
